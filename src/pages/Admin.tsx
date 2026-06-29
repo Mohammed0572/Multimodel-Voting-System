@@ -94,9 +94,9 @@ const Admin = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl px-4 mt-8 mx-auto">
         {/* Add Candidate Form */}
-        <div className="bg-cream p-6 rounded-sm border border-[#dfe1e2]">
+        <div className="bg-white shadow-xl shadow-black/5 p-6 sm:p-8 rounded-2xl border border-gray-100">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
@@ -139,7 +139,7 @@ const Admin = () => {
         </div>
 
         {/* Election Controls Form */}
-        <div className="bg-cream p-6 rounded-sm border border-[#dfe1e2]">
+        <div className="bg-white shadow-xl shadow-black/5 p-6 sm:p-8 rounded-2xl border border-gray-100">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-[#005ea2] text-white rounded-full">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>

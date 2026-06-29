@@ -125,3 +125,15 @@
     transform: rotate(360deg);
   }
 }
+
+@layer components {
+  .btn-primary, .gov-button {
+    @apply inline-flex items-center justify-center px-6 py-2.5 bg-[#046a38] text-white font-medium rounded-lg shadow-sm hover:bg-[#03512b] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-[#046a38] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto;
+  }
+  .gov-input {
+    @apply block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-[#ff671f] focus:border-[#ff671f] outline-none transition-colors bg-white text-gray-900;
+  }
+  .gov-input-label {
+    @apply block mb-1.5 text-sm font-medium text-gray-700;
+  }
+}
