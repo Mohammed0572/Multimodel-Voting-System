@@ -1,14 +1,6 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
+import { Outlet, Link } from 'react-router-dom';
 
 const Layout = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { setLang, t } = useLanguage();
-  const { session, logout } = useAuth();
-  const [showLangMenu, setShowLangMenu] = useState(false);
 
   return (
     <div className="min-h-screen bg-(--cream) flex flex-col">

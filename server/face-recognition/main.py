@@ -242,30 +242,32 @@ def sync_encodings_pkl() -> None:
 def _seed_admin() -> None:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT 1 FROM admins")
-        if cursor.fetchone() is None:
-            # First boot scenario
-            admin_pass = settings.ADMIN_PASSWORD
+        
+        admin_pass = settings.ADMIN_PASSWORD
+        
+        if not admin_pass:
+            raise ValueError("ADMIN_PASSWORD environment variable is missing. You MUST set a secure ADMIN_PASSWORD in the .env file before starting the server.")
             
-            if not admin_pass:
-                raise ValueError("ADMIN_PASSWORD environment variable is missing. You MUST set a secure ADMIN_PASSWORD in the .env file before starting the server.")
-                
-            if len(admin_pass) < 12:
-                raise ValueError("ADMIN_PASSWORD must be at least 12 characters long.")
-                
-            if not any(char.isdigit() for char in admin_pass):
-                raise ValueError("ADMIN_PASSWORD must contain at least one digit.")
-                
-            if admin_pass.lower() in ["admin123", "password", "admin123456", "password123"]:
-                raise ValueError("ADMIN_PASSWORD is set to a known weak value. Choose a stronger password.")
+        if len(admin_pass) < 12:
+            raise ValueError("ADMIN_PASSWORD must be at least 12 characters long.")
+            
+        if not any(char.isdigit() for char in admin_pass):
+            raise ValueError("ADMIN_PASSWORD must contain at least one digit.")
+            
+        if admin_pass.lower() in ["admin123", "password", "admin123456", "password123"]:
+            raise ValueError("ADMIN_PASSWORD is set to a known weak value. Choose a stronger password.")
 
-            hashed = get_password_hash(admin_pass)
-            cursor.execute(
-                "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
-                (settings.ADMIN_USERNAME, hashed),
-            )
-            conn.commit()
-            log.info("   [SEED] Created initial admin account in admins table")
+        hashed = get_password_hash(admin_pass)
+
+        # Sync DB strictly with .env
+        cursor.execute("DELETE FROM admins")
+        cursor.execute(
+            "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
+            (settings.ADMIN_USERNAME, hashed),
+        )
+        log.info("   [SEED] Synced admin account (username and password) with .env")
+            
+        conn.commit()
 
 
 # ═══════════════════════════════════════════════════════════════════════════

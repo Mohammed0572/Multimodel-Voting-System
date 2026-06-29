@@ -3,6 +3,7 @@ node_modules/
 
 # ── Environment Variables (secrets) ──────────────
 .env
+.env.sepolia
 .env.local
 .env.production
 
