@@ -464,10 +464,7 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
 # ── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-    ],
+    allow_origins=settings.frontend_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -552,7 +549,7 @@ async def auth_refresh(request: Request, response: Response):
         key="auth_token",
         value=new_token,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="strict",
         max_age=JWT_EXPIRY_HOURS * 3600,
     )
@@ -603,7 +600,7 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
         key="auth_token",
         value=token,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="strict",
         max_age=JWT_EXPIRY_HOURS * 3600,
     )
@@ -736,7 +733,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         key=_COOKIE_NAME,
         value=token,
         httponly=True,
-        secure=True,
+        secure=settings.COOKIE_SECURE,
         samesite="strict",
         max_age=_COOKIE_MAX_AGE,
         path="/",

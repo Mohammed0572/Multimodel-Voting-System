@@ -1,11 +1,10 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
-const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
-  contracts_directory: "./contracts",
-  contracts_build_directory: "../src/contracts/",
-  migrations_directory: "./migrations",
+  contracts_directory: path.join(__dirname, "contracts"),
+  contracts_build_directory: path.join(__dirname, "../../src/contracts"),
+  migrations_directory: path.join(__dirname, "migrations"),
   // See <http://truffleframework.com/docs/advanced/configuration>
   // for more about customizing your Truffle configuration!
   networks: {
@@ -15,10 +14,13 @@ module.exports = {
       network_id: "*" // Match any network id
     },
     sepolia: {
-      provider: () => new HDWalletProvider(
-        process.env.MNEMONIC,
-        process.env.SEPOLIA_RPC_URL
-      ),
+      provider: () => {
+        const HDWalletProvider = require('@truffle/hdwallet-provider');
+        return new HDWalletProvider(
+          process.env.MNEMONIC,
+          process.env.SEPOLIA_RPC_URL
+        );
+      },
       network_id: 11155111,
       confirmations: 2,
       timeoutBlocks: 200,
