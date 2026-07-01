@@ -20,6 +20,13 @@ vi.mock('../context/Web3Context', () => ({
   useWeb3: () => mockWeb3State,
 }));
 
+vi.mock('../context/AuthContext', () => ({
+  useAuth: () => ({
+    session: { voter_id: 'VTR-84291', role: 'user' },
+    logout: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 // Mock Language Context
 vi.mock('../context/LanguageContext', () => ({
   useLanguage: () => ({
@@ -85,7 +92,7 @@ describe('Voting Component', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText('✓ You have successfully cast your official vote.')).toBeInTheDocument();
+      expect(screen.getByText('Your vote has been sealed on chain')).toBeInTheDocument();
     });
   });
 
@@ -107,10 +114,10 @@ describe('Voting Component', () => {
     });
 
     // Select candidate
-    fireEvent.click(screen.getByText('Alice').closest('.candidate-row')!);
+    fireEvent.click(screen.getByRole('button', { name: /Alice Party A/i }));
 
     // Confirm vote
-    const confirmButton = screen.getByText('voting.confirm');
+    const confirmButton = screen.getByRole('button', { name: /Review & confirm/i });
     expect(confirmButton).not.toBeDisabled();
     
     // Simulate click

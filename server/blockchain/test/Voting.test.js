@@ -12,15 +12,12 @@ contract("Voting", (accounts) => {
     assert.equal(count.toNumber(), 0, "Initial candidate count should be 0");
   });
 
-  it("should set voting dates successfully", async () => {
-    const now = Math.floor(Date.now() / 1000);
-    const startDate = now + 10; // Start in 10 seconds
-    const endDate = now + 86400; // End in 1 day
-
-    await votingInstance.setDates(startDate, endDate);
-    const dates = await votingInstance.getDates();
-    assert.equal(dates[0].toNumber(), startDate, "Start date mismatch");
-    assert.equal(dates[1].toNumber(), endDate, "End date mismatch");
+  it("should start and end an election", async () => {
+    const instance = await Voting.new();
+    await instance.startElection();
+    assert.equal((await instance.getElectionState()).toNumber(), 1);
+    await instance.endElection();
+    assert.equal((await instance.getElectionState()).toNumber(), 2);
   });
 
   it("should add a candidate", async () => {
@@ -37,9 +34,8 @@ contract("Voting", (accounts) => {
 
   it("should allow a user to vote", async () => {
     const newVotingInstance = await Voting.new();
-    const now = Math.floor(Date.now() / 1000);
-    await newVotingInstance.setDates(now - 1000, now + 100000);
     await newVotingInstance.addCandidate("Bob", "Party B");
+    await newVotingInstance.startElection();
 
     await newVotingInstance.vote(1, { from: accounts[1] });
     
@@ -52,9 +48,8 @@ contract("Voting", (accounts) => {
 
   it("should prevent double voting", async () => {
     const newVotingInstance = await Voting.new();
-    const now = Math.floor(Date.now() / 1000);
-    await newVotingInstance.setDates(now - 1000, now + 100000);
     await newVotingInstance.addCandidate("Charlie", "Party C");
+    await newVotingInstance.startElection();
 
     await newVotingInstance.vote(1, { from: accounts[2] });
 
@@ -68,9 +63,8 @@ contract("Voting", (accounts) => {
 
   it("should prevent voting for invalid candidates", async () => {
     const newVotingInstance = await Voting.new();
-    const now = Math.floor(Date.now() / 1000);
-    await newVotingInstance.setDates(now - 1000, now + 100000);
     await newVotingInstance.addCandidate("Dave", "Party D");
+    await newVotingInstance.startElection();
 
     try {
       await newVotingInstance.vote(99, { from: accounts[3] });
@@ -80,14 +74,11 @@ contract("Voting", (accounts) => {
     }
   });
 
-  it("should prevent non-owner from setting voting dates", async () => {
+  it("should prevent non-owner from starting an election", async () => {
     const newVotingInstance = await Voting.new({ from: accounts[0] });
-    const now = Math.floor(Date.now() / 1000);
-    const startDate = now + 10;
-    const endDate = now + 86400;
 
     try {
-      await newVotingInstance.setDates(startDate, endDate, { from: accounts[1] });
+      await newVotingInstance.startElection({ from: accounts[1] });
       assert.fail("The transaction should have reverted");
     } catch (error) {
       assert(error.message.indexOf("revert") >= 0, "Error must contain revert");

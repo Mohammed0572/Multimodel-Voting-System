@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { Link } from 'react-router-dom';
 import { Chakra } from '../components/Chakra';
@@ -35,13 +35,7 @@ const Voting = () => {
   const [stage, setStage] = useState<"choose" | "review" | "sealing" | "sealed">("choose");
   const [txHash, setTxHash] = useState<string>("0x...");
   
-  useEffect(() => {
-    if (contract) {
-      loadVotingData();
-    }
-  }, [contract]);
-
-  const loadVotingData = async () => {
+  const loadVotingData = useCallback(async () => {
     try {
       const stateResult = await contract.getElectionState();
       setElectionState(stateResult.toNumber());
@@ -67,19 +61,17 @@ const Voting = () => {
     } catch (error) {
       console.error("Error loading voting data:", error);
     }
-  };
+  }, [account, contract]);
 
-  const displayCandidates = [...candidates];
-  if (candidates.length > 0) {
-    displayCandidates.push({ 
-      id: 9999, 
-      name: 'None of the Above', 
-      party: 'NOTA', 
-      voteCount: 0,
-      color: "#64748b",
-      symbol: "⊘"
-    });
-  }
+  useEffect(() => {
+    if (contract) {
+      loadVotingData();
+    }
+  }, [contract, loadVotingData]);
+
+  // NOTA must be registered on-chain by an administrator. A client-only
+  // candidate ID would be rejected by the contract as invalid.
+  const displayCandidates = candidates;
 
   const handleVote = async () => {
     if (stage === "sealing" || hasVoted) return;
@@ -207,7 +199,7 @@ const Voting = () => {
                   </h2>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {displayCandidates.length} candidates · including NOTA
+                  {displayCandidates.length} candidates
                 </div>
               </div>
 

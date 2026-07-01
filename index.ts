@@ -1,7 +1,5 @@
-// @ts-nocheck
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
-import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { cleanEnv, port, str } from 'envalid';

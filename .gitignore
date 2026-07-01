@@ -14,6 +14,8 @@ src/dist/
 
 # ── Python ───────────────────────────────────────
 __pycache__/
+.pytest_cache/
+.venv/
 *.pyc
 *.pyo
 *.egg-info/
