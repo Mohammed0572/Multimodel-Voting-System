@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Web3 from 'web3';
-// @ts-ignore
+// @ts-expect-error @truffle/contract does not publish compatible TypeScript declarations.
 import TruffleContract from '@truffle/contract';
 import votingArtifacts from "../contracts/Voting.json";
 
 declare global {
   interface Window {
-    ethereum: any;
-    web3: any;
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+    };
   }
 }
 
@@ -38,20 +39,34 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     const initWeb3 = async () => {
       try {
         const VOTING_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
-        let currentWeb3;
-        // Use Sepolia testnet provider
-        currentWeb3 = new Web3(
-          new Web3.providers.HttpProvider(import.meta.env.VITE_SEPOLIA_RPC_URL)
-        );
+        if (!window.ethereum) {
+          throw new Error('MetaMask is required to sign voting transactions.');
+        }
+        if (!VOTING_CONTRACT_ADDRESS) {
+          throw new Error('VITE_CONTRACT_ADDRESS is not configured.');
+        }
+
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const currentWeb3 = new Web3(window.ethereum as any);
+        const expectedChainId = Number(import.meta.env.VITE_NETWORK_ID || 11155111);
+        const chainId = await currentWeb3.eth.getChainId();
+        if (Number(chainId) !== expectedChainId) {
+          throw new Error(
+            `Wrong blockchain network. Expected chain ID ${expectedChainId}, received ${chainId}.`
+          );
+        }
         
         setWeb3(currentWeb3);
         
         const accounts = await currentWeb3.eth.getAccounts();
+        if (!accounts[0]) {
+          throw new Error('No MetaMask account is connected.');
+        }
         setAccount(accounts[0]);
 
         const VotingContract = TruffleContract(votingArtifacts);
         VotingContract.setProvider(currentWeb3.currentProvider);
-        VotingContract.defaults({ from: accounts[0], gas: 6654755 });
+        VotingContract.defaults({ from: accounts[0] });
         
         const instance = await VotingContract.at(VOTING_CONTRACT_ADDRESS);
         setContract(instance);

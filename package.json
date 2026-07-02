@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "serve": "ts-node index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:blockchain": "truffle test --config server/blockchain/truffle-config.js"
   },
   "author": "",
   "license": "ISC",
@@ -46,6 +47,7 @@
     "truffle": "^5.11.5",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
     "vite": "^8.0.16",
     "vite-plugin-node-polyfills": "^0.28.0",
     "vitest": "^4.1.9"

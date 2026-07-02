@@ -64,7 +64,7 @@ const AdminLogin = () => {
         updateStatus(`Failed: ${errData.detail || 'Invalid credentials.'}`, "error");
         setIsProcessing(false);
       }
-    } catch (error) {
+    } catch {
       updateStatus("Network error. Ensure backend is running.", "error");
       setIsProcessing(false);
     }
