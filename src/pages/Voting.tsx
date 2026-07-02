@@ -24,7 +24,7 @@ const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
 const SYMBOLS = ["🪷", "✋", "🌾", "🚲", "⊘"];
 
 const Voting = () => {
-  const { account, contract, isLoading } = useWeb3();
+  const { account, contract, isLoading, error } = useWeb3();
   const { session, logout } = useAuth();
   
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -101,6 +101,16 @@ const Voting = () => {
       <div className="flex min-h-screen flex-col items-center justify-center bg-paper py-20 text-ink">
         <Chakra size={80} className="text-saffron mb-4" spin />
         <p className="font-medium text-muted-foreground">Connecting to Blockchain...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-paper py-20 text-ink px-6 text-center">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Blockchain Connection Failed</h2>
+        <p className="text-muted-foreground mb-4 max-w-md">{error}</p>
+        <p className="text-sm">Please ensure MetaMask is connected, unlock the account, and refresh the page.</p>
       </div>
     );
   }
