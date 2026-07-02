@@ -9178,9 +9178,7 @@
   "ast": {
     "absolutePath": "project:/contracts/Voting.sol",
     "exportedSymbols": {
-      "Voting": [
-        266
-      ]
+      "Voting": [266]
     },
     "id": 267,
     "license": "MIT",
@@ -9188,12 +9186,7 @@
     "nodes": [
       {
         "id": 41,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".20"
-        ],
+        "literals": ["solidity", "^", "0.8", ".20"],
         "nodeType": "PragmaDirective",
         "src": "32:24:1"
       },
@@ -9205,9 +9198,7 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 266,
-        "linearizedBaseContracts": [
-          266
-        ],
+        "linearizedBaseContracts": [266],
         "name": "Voting",
         "nameLocation": "67:6:1",
         "nodeType": "ContractDefinition",
@@ -9405,9 +9396,7 @@
                 "pathNode": {
                   "id": 54,
                   "name": "Candidate",
-                  "nameLocations": [
-                    "238:9:1"
-                  ],
+                  "nameLocations": ["238:9:1"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 52,
                   "src": "238:9:1"
@@ -9526,9 +9515,7 @@
               "pathNode": {
                 "id": 66,
                 "name": "ElectionState",
-                "nameLocations": [
-                  "400:13:1"
-                ],
+                "nameLocations": ["400:13:1"],
                 "nodeType": "IdentifierPath",
                 "referencedDeclaration": 65,
                 "src": "400:13:1"
@@ -9817,10 +9804,7 @@
                       "id": 86,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "594:7:1",
                       "typeDescriptions": {
@@ -10095,9 +10079,7 @@
                 "modifierName": {
                   "id": 102,
                   "name": "onlyOwner",
-                  "nameLocations": [
-                    "734:9:1"
-                  ],
+                  "nameLocations": ["734:9:1"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 96,
                   "src": "734:9:1"
@@ -10308,10 +10290,7 @@
                       "id": 129,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "986:7:1",
                       "typeDescriptions": {
@@ -10479,10 +10458,7 @@
                       "id": 137,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1064:7:1",
                       "typeDescriptions": {
@@ -10591,10 +10567,7 @@
                       "id": 148,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1154:7:1",
                       "typeDescriptions": {
@@ -11500,10 +11473,7 @@
                       "id": 223,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1792:7:1",
                       "typeDescriptions": {
@@ -11603,9 +11573,7 @@
                 "modifierName": {
                   "id": 220,
                   "name": "onlyOwner",
-                  "nameLocations": [
-                    "1772:9:1"
-                  ],
+                  "nameLocations": ["1772:9:1"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 96,
                   "src": "1772:9:1"
@@ -11733,10 +11701,7 @@
                       "id": 242,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "1968:7:1",
                       "typeDescriptions": {
@@ -11836,9 +11801,7 @@
                 "modifierName": {
                   "id": 239,
                   "name": "onlyOwner",
-                  "nameLocations": [
-                    "1948:9:1"
-                  ],
+                  "nameLocations": ["1948:9:1"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 96,
                   "src": "1948:9:1"
@@ -11933,9 +11896,7 @@
                     "pathNode": {
                       "id": 258,
                       "name": "ElectionState",
-                      "nameLocations": [
-                        "2132:13:1"
-                      ],
+                      "nameLocations": ["2132:13:1"],
                       "nodeType": "IdentifierPath",
                       "referencedDeclaration": 65,
                       "src": "2132:13:1"
@@ -11975,12 +11936,12 @@
     "1337": {
       "events": {},
       "links": {},
-      "address": "0x9561C133DD8580860B6b7E504bC5Aa500f0f06a7",
-      "transactionHash": "0x34bc81773b3266fffd69aec49bae6cb807272f10455545d2e7d03c429baaf317"
+      "address": "0xCfEB869F69431e42cdB54A4F4f105C19C080A601",
+      "transactionHash": "0xf20a43f218ff11f7bb9171921078109411dbf7a1c92596215bdc83112685d8a0"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2026-07-02T16:30:45.539Z",
+  "updatedAt": "2026-07-02T16:40:10.926Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",

@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 const Admin = () => {
   const { t } = useLanguage();
-  const { account, contract, isLoading } = useWeb3();
+  const { account, contract, isLoading, error } = useWeb3();
   const [candidateName, setCandidateName] = useState('');
   const [candidateParty, setCandidateParty] = useState('');
   const [status, setStatus] = useState({ message: '', type: '' });
@@ -77,6 +77,16 @@ const Admin = () => {
     return (
       <div className="flex justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-paper py-20 text-ink px-6 text-center">
+        <h2 className="text-2xl font-bold text-red-600 mb-4">Blockchain Connection Failed</h2>
+        <p className="text-muted-foreground mb-4 max-w-md">{error}</p>
+        <p className="text-sm">Please ensure MetaMask is connected, unlock the account, and refresh the page.</p>
       </div>
     );
   }

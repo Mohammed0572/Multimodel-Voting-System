@@ -1471,9 +1471,7 @@
   "ast": {
     "absolutePath": "project:/contracts/Migrations.sol",
     "exportedSymbols": {
-      "Migrations": [
-        39
-      ]
+      "Migrations": [39]
     },
     "id": 40,
     "license": "MIT",
@@ -1481,12 +1479,7 @@
     "nodes": [
       {
         "id": 1,
-        "literals": [
-          "solidity",
-          "^",
-          "0.8",
-          ".20"
-        ],
+        "literals": ["solidity", "^", "0.8", ".20"],
         "nodeType": "PragmaDirective",
         "src": "32:24:0"
       },
@@ -1498,9 +1491,7 @@
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 39,
-        "linearizedBaseContracts": [
-          39
-        ],
+        "linearizedBaseContracts": [39],
         "name": "Migrations",
         "nameLocation": "67:10:0",
         "nodeType": "ContractDefinition",
@@ -1659,10 +1650,7 @@
                       "id": 7,
                       "name": "require",
                       "nodeType": "Identifier",
-                      "overloadedDeclarations": [
-                        4294967278,
-                        4294967278
-                      ],
+                      "overloadedDeclarations": [4294967278, 4294967278],
                       "referencedDeclaration": 4294967278,
                       "src": "175:7:0",
                       "typeDescriptions": {
@@ -1864,9 +1852,7 @@
                 "modifierName": {
                   "id": 30,
                   "name": "restricted",
-                  "nameLocations": [
-                    "341:10:0"
-                  ],
+                  "nameLocations": ["341:10:0"],
                   "nodeType": "IdentifierPath",
                   "referencedDeclaration": 17,
                   "src": "341:10:0"
@@ -1941,12 +1927,12 @@
     "1337": {
       "events": {},
       "links": {},
-      "address": "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
-      "transactionHash": "0xc703135c376cca5451276952a40aa95a23fc8b774f8d2a833595bbda0b8ce87e"
+      "address": "0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab",
+      "transactionHash": "0xf2b07c42dd8658663f85471131545e2d07e80f12902e7cdf1b960fe89c3e65c0"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2026-07-02T16:30:45.542Z",
+  "updatedAt": "2026-07-02T16:40:10.941Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
