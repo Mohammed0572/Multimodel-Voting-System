@@ -81,6 +81,9 @@ importers:
       esmify:
         specifier: ^2.1.1
         version: 2.1.1
+      ganache:
+        specifier: ^7.9.2
+        version: 7.9.2
       globals:
         specifier: ^17.6.0
         version: 17.6.0
@@ -2850,6 +2853,15 @@ packages:
 
   ganache@7.9.1:
     resolution: {integrity: sha512-Tqhd4J3cpiLeYTD6ek/zlchSB107IVPMIm4ypyg+xz1sdkeALUnYYZnmY4Bdjqj3i6QwtlZPCu7U4qKy7HlWTA==}
+    hasBin: true
+    bundledDependencies:
+      - '@trufflesuite/bigint-buffer'
+      - keccak
+      - leveldown
+      - secp256k1
+
+  ganache@7.9.2:
+    resolution: {integrity: sha512-7gsVVDpO9AhrFyDMWWl7SpMsPpqGcnAzjxz3k32LheIPNd64p2XsY9GYRdhWmKuryb60W1iaWPZWDkFKlbRWHA==}
     hasBin: true
     bundledDependencies:
       - '@trufflesuite/bigint-buffer'
@@ -8782,6 +8794,20 @@ snapshots:
     optional: true
 
   ganache@7.9.1:
+    dependencies:
+      '@trufflesuite/uws-js-unofficial': 20.30.0-unofficial.0
+      '@types/bn.js': 5.2.0
+      '@types/lru-cache': 5.1.1
+      '@types/seedrandom': 3.0.1
+      abstract-level: 1.0.3
+      abstract-leveldown: 7.2.0
+      async-eventemitter: 0.2.4
+      emittery: 0.10.0
+    optionalDependencies:
+      bufferutil: 4.0.5
+      utf-8-validate: 5.0.7
+
+  ganache@7.9.2:
     dependencies:
       '@trufflesuite/uws-js-unofficial': 20.30.0-unofficial.0
       '@types/bn.js': 5.2.0
