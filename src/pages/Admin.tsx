@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useWeb3 } from '../context/Web3Context';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -10,20 +10,20 @@ const Admin = () => {
   const [status, setStatus] = useState({ message: '', type: '' });
   const [electionState, setElectionState] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (contract) {
-      loadState();
-    }
-  }, [contract]);
-
-  const loadState = async () => {
+  const loadState = useCallback(async () => {
     try {
       const stateResult = await contract.getElectionState();
       setElectionState(stateResult.toNumber());
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [contract]);
+
+  useEffect(() => {
+    if (contract) {
+      loadState();
+    }
+  }, [contract, loadState]);
 
   const updateStatus = (msg: string, type: string) => {
     setStatus({ message: msg, type });

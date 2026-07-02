@@ -10,22 +10,12 @@ vi.mock('../context/LanguageContext', () => ({
   }),
 }));
 
-// Mock Auth Context
-const mockAuth = {
-  setAuth: vi.fn(),
-};
-
-vi.mock('../context/AuthContext', () => ({
-  useAuth: () => mockAuth,
-}));
-
-// Mock AuthContext
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
-    role: null,
-    voter_id: null,
+    session: null,
+    isCheckingSession: false,
     setAuth: vi.fn(),
-    logout: vi.fn(),
+    logout: vi.fn().mockResolvedValue(undefined),
   })
 }));
 

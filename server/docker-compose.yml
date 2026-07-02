@@ -35,7 +35,7 @@ services:
   # ── Face Auth API (FastAPI) ────────────────────────────────
   face_auth:
     build:
-      context: ./Database_API
+      context: ./face-recognition
       dockerfile: Dockerfile
     container_name: voting_face_auth
     restart: unless-stopped
@@ -46,13 +46,13 @@ services:
       - JWT_EXPIRY_HOURS=${JWT_EXPIRY_HOURS:-2}
       - MATCH_TOLERANCE=${MATCH_TOLERANCE:-0.5}
       - REDIS_URL=redis://redis:6379/0   # service name, not localhost
+      - FRONTEND_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+      - COOKIE_SECURE=false
       - EAR_MIN_CLOSED=${EAR_MIN_CLOSED:-0.22}
       - EAR_MIN_OPEN=${EAR_MIN_OPEN:-0.25}
     depends_on:
       redis:
         condition: service_healthy
-    volumes:
-      - ./face-recognition:/app/face-recognition:ro   # encodings.pkl
 
   # ── Express Frontend ───────────────────────────────────────
   frontend:

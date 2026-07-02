@@ -2,6 +2,11 @@
 pragma solidity ^0.5.15;
 
 contract Voting {
+    address public owner;
+
+    enum ElectionState { NotStarted, Active, Ended }
+    ElectionState public state;
+
     struct Candidate {
         uint id;
         string name;
@@ -12,30 +17,33 @@ contract Voting {
     mapping (uint => Candidate) public candidates;
     mapping (address => bool) public voters;
 
-    
     uint public countCandidates;
-    uint256 public votingEnd;
-    uint256 public votingStart;
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can perform this action");
+        _;
+    }
 
-    function addCandidate(string memory name, string memory party) public  returns(uint) {
-               countCandidates ++;
-               candidates[countCandidates] = Candidate(countCandidates, name, party, 0);
-               return countCandidates;
+    constructor() public {
+        owner = msg.sender;
+        state = ElectionState.NotStarted;
+    }
+
+    function addCandidate(string memory name, string memory party) public onlyOwner returns(uint) {
+        countCandidates++;
+        candidates[countCandidates] = Candidate(countCandidates, name, party, 0);
+        return countCandidates;
     }
    
     function vote(uint candidateID) public {
+        require(state == ElectionState.Active, "Election is not currently active");
+        require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate ID");
 
-       require((votingStart <= now) && (votingEnd > now));
-   
-       require(candidateID > 0 && candidateID <= countCandidates);
-
-       //daha önce oy kullanmamıs olmalı
-       require(!voters[msg.sender]);
+        // Has not voted before
+        require(!voters[msg.sender], "You have already voted");
               
-       voters[msg.sender] = true;
-       
-       candidates[candidateID].voteCount ++;      
+        voters[msg.sender] = true;
+        candidates[candidateID].voteCount++;      
     }
     
     function checkVote() public view returns(bool){
@@ -46,17 +54,21 @@ contract Voting {
         return countCandidates;
     }
 
-    function getCandidate(uint candidateID) public view returns (uint,string memory, string memory,uint) {
-        return (candidateID,candidates[candidateID].name,candidates[candidateID].party,candidates[candidateID].voteCount);
+    function getCandidate(uint candidateID) public view returns (uint, string memory, string memory, uint) {
+        return (candidateID, candidates[candidateID].name, candidates[candidateID].party, candidates[candidateID].voteCount);
     }
 
-    function setDates(uint256 _startDate, uint256 _endDate) public{
-        require((votingEnd == 0) && (votingStart == 0) && (_startDate + 1000000 > now) && (_endDate > _startDate));
-        votingEnd = _endDate;
-        votingStart = _startDate;
+    function startElection() public onlyOwner {
+        require(state == ElectionState.NotStarted, "Election is already started or ended");
+        state = ElectionState.Active;
     }
 
-    function getDates() public view returns (uint256,uint256) {
-      return (votingStart,votingEnd);
+    function endElection() public onlyOwner {
+        require(state == ElectionState.Active, "Election is not active");
+        state = ElectionState.Ended;
+    }
+
+    function getElectionState() public view returns (uint) {
+        return uint(state);
     }
 }
