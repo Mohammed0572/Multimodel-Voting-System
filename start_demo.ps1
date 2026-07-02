@@ -9,7 +9,7 @@ Pop-Location
 
 # Start Ganache
 Write-Host "Starting Ganache on port 7545..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "npx ganache --port 7545"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "npx ganache --port 7545 --deterministic --networkId 1337"
 Write-Host "Waiting for Ganache to initialize..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
 
