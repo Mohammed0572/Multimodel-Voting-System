@@ -15,13 +15,14 @@
 This project is a highly secure, transparent, and tamper-proof voting system built on the Ethereum blockchain. By integrating advanced facial recognition technology with decentralized smart contracts, the system ensures that elections are fair, verifiable, and completely immune to voter fraud or manipulation.
 
 ## Deployed Contract
+
 Network: Ethereum Sepolia Testnet
 Contract Address: `0xYOUR_CONTRACT_ADDRESS_HERE`
 Etherscan: https://sepolia.etherscan.io/address/0xYOUR_CONTRACT_ADDRESS_HERE
 
 ### Dashboard Overview
 
-![Admin Dashboard](./public/Dashboard.png)
+![Admin Dashboard](./public/Dashboard.gif)
 _The centralized, modern interface for managing the election process securely._
 
 ### System Architecture
@@ -88,11 +89,13 @@ Administrators have access to a separate, secure dashboard where they can:
 The project utilizes GitHub's automated **CodeQL analysis** to continuously scan the codebase for security vulnerabilities, code quality issues, and compliance.
 
 ### Latest Scan Status
+
 - **Status:** [![CodeQL](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml/badge.svg)](https://github.com/Mohammed0572/VotingSystem/actions/workflows/codeql.yml) (Passing / Clean)
 - **Coverage:** Scans both **JavaScript/TypeScript** (Frontend & Express App) and **Python** (FastAPI Authentication Server) codebases.
 - **Trigger:** Automated analysis is performed on every push to the `main` branch, pull requests, and scheduled weekly (every Sunday at 01:30 UTC).
 
 ### Security Review Outcomes & Resolved Issues
+
 In recent security remediation cycles, all identified vulnerabilities have been systematically resolved:
 
 1. **Authentication Security & Secret Management**
@@ -114,6 +117,7 @@ In recent security remediation cycles, all identified vulnerabilities have been 
    - **Origin Restriction:** Configured CORS origins on the FastAPI server to strictly allow only the specified frontend origin.
 
 ### Outstanding Findings
+
 - **None:** There are currently no outstanding security alerts or vulnerabilities detected by CodeQL.
 
 ---
