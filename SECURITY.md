@@ -20,6 +20,7 @@ If you discover a security vulnerability within this project, please **do not** 
    * [toxicbishop](https://github.com/toxicbishop)
    * [Mohammed0572](https://github.com/Mohammed0572)
    * [supr1795](https://github.com/supr1795)
+   * [Rohithgaloth](https://github.com/Rohithgaloth)
 
 ### What to Include in a Report
 To help us triage and resolve the issue quickly, please include:
