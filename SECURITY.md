@@ -4,12 +4,9 @@ We take security seriously and appreciate your help in keeping this project secu
 
 ## Supported Versions
 
-Currently, the following versions of the project are supported with security updates:
+The project is currently in the pre-release/development phase and has not been officially deployed or versioned yet. 
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+However, we welcome and review security reports for any vulnerabilities found in the active branch.
 
 ## Reporting a Vulnerability
 
