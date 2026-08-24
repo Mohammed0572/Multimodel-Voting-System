@@ -1,5 +1,5 @@
-
-pragma solidity ^0.5.15;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 contract Voting {
     address public owner;
@@ -25,7 +25,7 @@ contract Voting {
         _;
     }
 
-    constructor() public {
+    constructor() {
         owner = msg.sender;
         state = ElectionState.NotStarted;
     }
