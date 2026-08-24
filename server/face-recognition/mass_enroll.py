@@ -29,14 +29,19 @@ def mass_enroll():
     conn = init_db()
     cursor = conn.cursor()
 
-    enrolled = 0
+    from collections import defaultdict
+    import numpy as np
+
+    voter_samples = defaultdict(list)
     failed = 0
 
-    for filename in os.listdir(IMAGES_DIR):
+    for filename in sorted(os.listdir(IMAGES_DIR)):
         if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
             continue
 
-        voter_id = os.path.splitext(filename)[0]
+        raw_id = os.path.splitext(filename)[0]
+        # Support voter_1, voter_2 or just voter
+        voter_id = raw_id.split('_')[0].strip().lower() if '_' in raw_id else raw_id.strip().lower()
         filepath = os.path.join(IMAGES_DIR, filename)
 
         try:
@@ -44,41 +49,48 @@ def mass_enroll():
             face_locations = face_recognition.face_locations(image)
 
             if len(face_locations) == 0:
-                print(f"[{voter_id}] Failed: No face detected in {filename}")
+                print(f"[{raw_id}] Failed: No face detected in {filename}")
                 failed += 1
                 continue
             if len(face_locations) > 1:
-                print(f"[{voter_id}] Failed: Multiple faces detected in {filename}. Please use an image with only one face.")
+                print(f"[{raw_id}] Failed: Multiple faces detected in {filename}. Please use an image with only one face.")
                 failed += 1
                 continue
 
             # Generate encoding
             encoding = face_recognition.face_encodings(image, known_face_locations=face_locations)[0]
-            encoding_json = json.dumps(encoding.tolist())
-
-            cursor.execute(
-                """
-                INSERT INTO voters (voter_id, role, face_encoding)
-                VALUES (?, ?, ?)
-                ON CONFLICT(voter_id) DO UPDATE SET
-                    face_encoding = excluded.face_encoding
-                """,
-                (voter_id, 'user', encoding_json),
-            )
-            conn.commit()
-            print(f"[{voter_id}] Successfully enrolled.")
-            enrolled += 1
+            voter_samples[voter_id].append(encoding)
+            print(f"[{voter_id}] Processed sample from {filename}")
 
         except Exception as e:
-            print(f"[{voter_id}] Error processing {filename}: {e}")
+            print(f"[{raw_id}] Error processing {filename}: {e}")
             failed += 1
+
+    # Clean previous table entries and insert averaged encodings
+    enrolled = 0
+    for voter_id, enc_list in voter_samples.items():
+        averaged = np.mean(enc_list, axis=0)
+        encoding_json = json.dumps(averaged.tolist())
+
+        cursor.execute(
+            """
+            INSERT INTO voters (voter_id, role, face_encoding)
+            VALUES (?, ?, ?)
+            ON CONFLICT(voter_id) DO UPDATE SET
+                face_encoding = excluded.face_encoding
+            """,
+            (voter_id, 'user', encoding_json),
+        )
+        conn.commit()
+        print(f"[{voter_id}] Successfully enrolled with {len(enc_list)} sample(s).")
+        enrolled += 1
 
     conn.commit()
     conn.close()
 
     print("\n--- Mass Enrollment Summary ---")
-    print(f"Successfully enrolled: {enrolled}")
-    print(f"Failed to enroll: {failed}")
+    print(f"Successfully enrolled voters: {enrolled}")
+    print(f"Failed image samples: {failed}")
 
 if __name__ == "__main__":
     mass_enroll()

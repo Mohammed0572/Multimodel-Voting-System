@@ -75,7 +75,11 @@ const Voting = () => {
 
       const voted = await contract.checkVote(hashVoterId(voterId));
       setHasVoted(voted);
-      if (voted) setStage("sealed");
+      if (voted) {
+        setStage("sealed");
+      } else {
+        setStage("choose");
+      }
     } catch (error) {
       console.error("Error loading voting data:", error);
     }

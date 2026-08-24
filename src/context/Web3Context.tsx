@@ -85,7 +85,33 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     };
+
     initWeb3();
+
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+      } else {
+        setAccount(null);
+      }
+    };
+
+    const handleChainChanged = () => {
+      window.location.reload();
+    };
+
+    const ethereum = (window as any).ethereum;
+    if (ethereum && ethereum.on) {
+      ethereum.on('accountsChanged', handleAccountsChanged);
+      ethereum.on('chainChanged', handleChainChanged);
+    }
+
+    return () => {
+      if (ethereum && ethereum.removeListener) {
+        ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        ethereum.removeListener('chainChanged', handleChainChanged);
+      }
+    };
   }, []);
 
   return (

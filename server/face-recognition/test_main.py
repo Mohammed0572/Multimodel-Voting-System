@@ -56,7 +56,7 @@ def test_enroll_face_success(mock_embed):
     
     with TestClient(app) as client:
         response = client.post(
-            "/enroll-face",
+            "/api/v1/enroll-face",
             json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE},
             headers={"Authorization": f"Bearer {get_admin_token()}"}
         )
@@ -76,14 +76,14 @@ def test_verify_face_success(mock_ear, mock_compare, mock_details):
     with TestClient(app) as client:
         # 1. Enroll
         client.post(
-            "/enroll-face",
+            "/api/v1/enroll-face",
             json={"voter_id": "voter_1", "role": "user", "image_base64": DUMMY_IMAGE},
             headers={"Authorization": f"Bearer {get_admin_token()}"}
         )
         
         # 2. Verify
         response = client.post(
-            "/verify-face",
+            "/api/v1/verify-face",
             json={"voter_id": "voter_1", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
         )
         assert response.status_code == 200
@@ -95,7 +95,7 @@ def test_enroll_requires_admin():
     with TestClient(app) as client:
         # No token
         response = client.post(
-            "/enroll-face",
+            "/api/v1/enroll-face",
             json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE}
         )
         assert response.status_code == 401
@@ -103,7 +103,7 @@ def test_enroll_requires_admin():
         # User token
         user_token = main.create_jwt("voter_1", "user")
         response2 = client.post(
-            "/enroll-face",
+            "/api/v1/enroll-face",
             json={"voter_id": "test_user", "role": "user", "image_base64": DUMMY_IMAGE},
             headers={"Authorization": f"Bearer {user_token}"}
         )
@@ -118,13 +118,13 @@ def test_verify_face_rate_limiting():
         # The limit is 5 per minute. Send 5 requests (which should bypass validation but fail on face detection, still triggering the limit)
         for _ in range(5):
             response = client.post(
-                "/verify-face",
+                "/api/v1/verify-face",
                 json={"voter_id": "test_user", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
             )
             assert response.status_code != 429
         # The 6th request must trigger a 429 Too Many Requests response
         response = client.post(
-            "/verify-face",
+            "/api/v1/verify-face",
             json={"voter_id": "test_user", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]}
         )
         assert response.status_code == 429
@@ -135,16 +135,16 @@ def test_admin_login():
     with TestClient(app) as client:
         # Valid login
         response = client.post(
-            "/admin-login",
-            json={"username": "admin", "password": "securepassword123"}
+            "/api/v1/admin-login",
+            json={"username": "admin_user", "password": "securepassword123"}
         )
         assert response.status_code == 200
         assert "auth_token" in response.cookies
 
         # Invalid login
         response = client.post(
-            "/admin-login",
-            json={"username": "admin", "password": "wrongpassword"}
+            "/api/v1/admin-login",
+            json={"username": "admin_user", "password": "wrongpassword"}
         )
         assert response.status_code == 401
 
