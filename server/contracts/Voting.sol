@@ -15,7 +15,8 @@ contract Voting {
     }
 
     mapping (uint => Candidate) public candidates;
-    mapping (address => bool) public voters;
+    // One ballot per authenticated voter ID, not per MetaMask account.
+    mapping (bytes32 => bool) public voters;
 
     uint public countCandidates;
 
@@ -35,19 +36,19 @@ contract Voting {
         return countCandidates;
     }
    
-    function vote(uint candidateID) public {
+    function vote(uint candidateID, bytes32 voterIdHash) public {
         require(state == ElectionState.Active, "Election is not currently active");
         require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate ID");
+        require(voterIdHash != bytes32(0), "Invalid voter ID");
 
-        // Has not voted before
-        require(!voters[msg.sender], "You have already voted");
+        require(!voters[voterIdHash], "You have already voted");
               
-        voters[msg.sender] = true;
+        voters[voterIdHash] = true;
         candidates[candidateID].voteCount++;      
     }
     
-    function checkVote() public view returns(bool){
-        return voters[msg.sender];
+    function checkVote(bytes32 voterIdHash) public view returns(bool){
+        return voters[voterIdHash];
     }
        
     function getCountCandidates() public view returns(uint) {

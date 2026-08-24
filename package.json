@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "serve": "ts-node index.ts",
     "test": "vitest run",
-    "test:blockchain": "truffle test --config server/blockchain/truffle-config.js"
+    "test:blockchain": "truffle test server/blockchain/test/Voting.test.js --config server/blockchain/truffle-config.js"
   },
   "author": "",
   "license": "ISC",

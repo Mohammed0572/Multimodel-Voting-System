@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Web3 from 'web3';
 import { useWeb3 } from '../context/Web3Context';
 import { Link } from 'react-router-dom';
 import { Chakra } from '../components/Chakra';
@@ -23,6 +24,17 @@ interface Candidate {
 const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
 const SYMBOLS = ["🪷", "✋", "🌾", "🚲", "⊘"];
 
+// The contract keys voting eligibility by voter identity, while the wallet only
+// signs the transaction. Normalizing before hashing keeps the same voter ID
+// stable across login and vote submission.
+const hashVoterId = (voterId: string) => {
+  const encodedVoterId = new TextEncoder().encode(voterId.trim().toUpperCase());
+  // Web3 v1 types only declare string/BN, although the runtime accepts Uint8Array.
+  const hash = Web3.utils.sha3(encodedVoterId as unknown as string);
+  if (!hash) throw new Error('Unable to hash voter ID.');
+  return hash;
+};
+
 const Voting = () => {
   const { account, contract, isLoading, error } = useWeb3();
   const { session, logout } = useAuth();
@@ -36,6 +48,12 @@ const Voting = () => {
   const [txHash, setTxHash] = useState<string>("0x...");
   
   const loadVotingData = useCallback(async () => {
+    const voterId = session?.voter_id?.trim();
+    if (!voterId) {
+      setHasVoted(false);
+      return;
+    }
+
     try {
       const stateResult = await contract.getElectionState();
       setElectionState(stateResult.toNumber());
@@ -55,13 +73,13 @@ const Voting = () => {
       }
       setCandidates(candidatesArray);
 
-      const voted = await contract.checkVote({ from: account });
+      const voted = await contract.checkVote(hashVoterId(voterId));
       setHasVoted(voted);
       if (voted) setStage("sealed");
     } catch (error) {
       console.error("Error loading voting data:", error);
     }
-  }, [account, contract]);
+  }, [contract, session?.voter_id]);
 
   useEffect(() => {
     if (contract) {
@@ -77,6 +95,12 @@ const Voting = () => {
     if (stage === "sealing" || hasVoted) return;
     if (!selectedCandidateId) return;
 
+    const voterId = session?.voter_id?.trim();
+    if (!voterId) {
+      alert('Your authenticated voter identity is missing. Please sign in again.');
+      return;
+    }
+
     setStage("sealing");
 
     // Optimistic UI updates
@@ -85,7 +109,7 @@ const Voting = () => {
 
     try {
       // In a real scenario we'd get the tx object back and can read tx.receipt.transactionHash
-      const tx = await contract.vote(selectedCandidateId, { from: account });
+      const tx = await contract.vote(selectedCandidateId, hashVoterId(voterId), { from: account });
       setTxHash(tx.tx || "0x7a3f9c2e…b91c");
       await loadVotingData();
     } catch (error) {
