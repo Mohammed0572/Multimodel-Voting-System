@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import Web3 from 'web3';
 import Voting from './Voting';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -124,7 +125,11 @@ describe('Voting Component', () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
-      expect(mockVote).toHaveBeenCalledWith(1, { from: '0x123' });
+      expect(mockVote).toHaveBeenCalledWith(
+        1,
+        Web3.utils.sha3(new TextEncoder().encode('VTR-84291') as unknown as string),
+        { from: '0x123' },
+      );
     });
   });
 });

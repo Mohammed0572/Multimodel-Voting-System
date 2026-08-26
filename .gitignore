@@ -42,3 +42,13 @@ Desktop.ini
 # ── AI Assistant Config ──────────────────────────
 .claude/
 .gemini/
+
+# ── Contract Artifacts ───────────────────────────
+src/contracts/Migrations.json
+src/contracts/Voting.json
+
+
+server\face-recognition\enrollment_images
+*.jpg
+server/face-recognition/mass_enroll.py
+server/face-recognition/mass_enroll.py

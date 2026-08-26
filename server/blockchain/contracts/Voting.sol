@@ -12,7 +12,9 @@ contract Voting {
     }
 
     mapping (uint => Candidate) public candidates;
-    mapping (address => bool) public voters;
+    // One ballot per authenticated voter ID, not per MetaMask account. This allows
+    // local/demo environments to use one administrator wallet for multiple voters.
+    mapping (bytes32 => bool) public voters;
 
     enum ElectionState {
         NotStarted,
@@ -39,21 +41,22 @@ contract Voting {
                return countCandidates;
     }
    
-    function vote(uint candidateID) public {
+    function vote(uint candidateID, bytes32 voterIdHash) public {
 
        require(state == ElectionState.Active, "Election is not active.");
    
        require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate.");
 
-       require(!voters[msg.sender]);
+       require(voterIdHash != bytes32(0), "Invalid voter ID.");
+       require(!voters[voterIdHash], "Voter has already voted.");
               
-       voters[msg.sender] = true;
+       voters[voterIdHash] = true;
        
        candidates[candidateID].voteCount ++;
     }
     
-    function checkVote() public view returns(bool){
-        return voters[msg.sender];
+    function checkVote(bytes32 voterIdHash) public view returns(bool){
+        return voters[voterIdHash];
     }
        
     function getCountCandidates() public view returns(uint) {

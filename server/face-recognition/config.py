@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     JWT_EXPIRY_HOURS: int = 2
 
     # ── Face Matching ─────────────────────────────────────────
-    MATCH_TOLERANCE: float = 0.5
+    MATCH_TOLERANCE: float = 0.55
 
     # ── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
