@@ -24,7 +24,7 @@ export default function Home() {
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-india-green/30 bg-india-green/5 px-3 py-1 text-xs font-medium text-india-green">
               <span className="size-1.5 rounded-full bg-india-green" />
-              Live · General Election 2026 · Phase 3 open
+              Prototype · Configured test network
             </div>
             <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
               {t('home.hero_title1') || 'Your vote.'}
@@ -32,7 +32,7 @@ export default function Home() {
               <span className="text-saffron">{t('home.hero_title2') || 'Sealed on chain.'}</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              {t('home.hero_desc') || "Prajatantra is India's multimodal, blockchain-secured voting platform. Verify with biometrics or facial recognition — and watch your ballot become an immutable record of the world's largest democracy."}
+              {t('home.hero_desc') || "Prajatantra is a voting-system prototype that combines voter-ID verification, face authentication, and blockchain-backed ballot recording. Explore the flow, review the source, and connect a wallet only when you are ready to cast a test ballot."}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
@@ -49,13 +49,13 @@ export default function Home() {
               </a>
             </div>
             <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              <span>Election Commission</span>
+              <span>Open-source prototype</span>
               <span className="text-hairline">·</span>
-              <span>MeitY</span>
+              <span>Local or test network</span>
               <span className="text-hairline">·</span>
-              <span>UIDAI Verified</span>
+              <span>Face API integrated</span>
               <span className="text-hairline">·</span>
-              <span>CERT-In Audited</span>
+              <span>MIT licensed</span>
             </div>
           </div>
 
@@ -74,25 +74,23 @@ export default function Home() {
               Multimodal authentication
             </div>
             <h2 className="mt-3 font-display text-4xl font-semibold text-paper md:text-5xl">
-              Two ways to prove you are you.
+A clear path from identity to ballot.
             </h2>
             <p className="mt-4 text-paper/70">
-              Every voter is verified through at least two independent channels
-              before a ballot is ever issued. No central password, no single
-              point of failure.
+The prototype separates voter identity verification from blockchain submission. You provide a voter ID, complete face verification, and then use a connected wallet to sign the test transaction.
             </p>
           </div>
           <div className="mt-16 grid gap-px overflow-hidden rounded-md border border-paper/10 bg-paper/10 md:grid-cols-2">
             {[
               {
                 icon: Fingerprint,
-                title: "Biometric Match",
-                body: "Fingerprint matched against your enrolled template, on device.",
+                title: "Voter ID",
+                body: "Your voter identifier is normalized before it is sent to the face-authentication service.",
               },
               {
                 icon: ScanFace,
-                title: "Facial Recognition",
-                body: "Liveness-checked face verification, encrypted end-to-end.",
+                title: "Face Verification",
+                body: "A short sequence of camera frames is sent to the configured authentication API for verification.",
               },
             ].map((f) => (
               <div key={f.title} className="bg-ink p-8">
@@ -122,9 +120,9 @@ export default function Home() {
               </h2>
             </div>
             <div className="hidden text-right text-sm text-muted-foreground md:block">
-              Average time end-to-end
+                Prototype flow
               <br />
-              <span className="font-mono text-ink">~ 2 min 14 s</span>
+              <span className="font-mono text-ink">4 guided steps</span>
             </div>
           </div>
 
@@ -179,23 +177,21 @@ export default function Home() {
                 Every ballot, publicly verifiable.
               </h2>
               <p className="mt-4 text-muted-foreground">
-                Anyone — voter, observer or journalist — can verify a vote
-                receipt against the public Prajatantra chain. No identities are
-                revealed. Only integrity.
+                In a configured deployment, observers can inspect the transaction hash and verify the ballot record on the selected network. This demo does not publish a production explorer or claim election-grade anonymity.
               </p>
-              <a
-                href="#"
+                <a
+                href="#chain"
                 className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-ashoka hover:underline"
               >
-                Open the explorer <ArrowRight className="size-4" />
+                View network details <ArrowRight className="size-4" />
               </a>
             </div>
             <div className="rounded-md border border-hairline bg-paper-warm p-8">
               <div className="grid grid-cols-3 gap-6 border-b border-hairline pb-6">
                 {[
-                  { k: "Votes recorded", v: "412,089,332" },
-                  { k: "Blocks mined", v: "4,218,902" },
-                  { k: "Nodes online", v: "1,184" },
+                  { k: "Network", v: "Configured testnet" },
+                  { k: "Receipt", v: "Transaction hash" },
+                  { k: "Identity", v: "Separated" },
                 ].map((s) => (
                   <div key={s.k}>
                     <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -245,15 +241,15 @@ export default function Home() {
             <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-3">
                 <ShieldCheck className="mt-0.5 size-4 text-india-green" />{" "}
-                Ballots encrypted on device before transmission
+                Authentication frames are sent only to the configured API
               </li>
               <li className="flex gap-3">
                 <ShieldCheck className="mt-0.5 size-4 text-india-green" />{" "}
-                Threshold cryptography — no single key opens a ballot
+                Voter identity hashes are used for duplicate-vote checks
               </li>
               <li className="flex gap-3">
                 <ShieldCheck className="mt-0.5 size-4 text-india-green" />{" "}
-                CERT-In audited; open-source cryptographic primitives
+                Smart-contract rules reject inactive elections and duplicate votes
               </li>
             </ul>
           </div>
@@ -264,17 +260,13 @@ export default function Home() {
             </h3>
             <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-3">
-                <Languages className="mt-0.5 size-4 text-ashoka" /> 22 official
-                languages, including <span className="font-hindi">हिंदी</span>,
-                தமிழ், বাংলা
+                <Languages className="mt-0.5 size-4 text-ashoka" />                 Language-ready interface with English and Hindi content paths
               </li>
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-4 text-ashoka" /> WCAG 2.2
-                AA, screen-reader and high-contrast modes
+                <ShieldCheck className="mt-0.5 size-4 text-ashoka" />                 Semantic controls, live status messages, and keyboard-friendly flows
               </li>
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-4 text-ashoka" /> Assisted
-                voting via verified polling kiosks
+                <ShieldCheck className="mt-0.5 size-4 text-ashoka" />                 Clear recovery guidance for camera, wallet, and network failures
               </li>
             </ul>
           </div>
@@ -338,8 +330,7 @@ export default function Home() {
                 </span>
               </div>
               <p className="mt-4 max-w-sm text-sm text-paper/60">
-                A constitutional initiative of the Election Commission of India
-                in partnership with MeitY and UIDAI.
+                An open-source voting-system prototype for exploring identity verification, wallet signing, and blockchain-backed records.
               </p>
             </div>
             <div className="text-sm">
@@ -380,7 +371,7 @@ export default function Home() {
               © {new Date().getFullYear()} Government of India · All rights
               reserved
             </div>
-            <div className="font-mono">chain: prajatantra-mainnet · v3.4.1</div>
+            <div className="font-mono">              chain: configured-network · prototype</div>
           </div>
         </div>
       </footer>
