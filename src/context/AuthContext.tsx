@@ -10,56 +10,72 @@ import {
 export const API_BASE =
   import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface AuthSession {
   voter_id: string;
   role: 'user' | 'admin' | string;
 }
 
 interface AuthContextValue {
-  /** Null while the initial /auth/me check is in-flight or not authenticated. */
   session: AuthSession | null;
-  /** True only while the initial session-restore fetch is pending. */
   isCheckingSession: boolean;
-  /** Call after a successful /verify-face response to populate the session. */
   setAuth: (session: AuthSession) => void;
-  /** Calls POST /auth/logout to clear the HttpOnly cookie, then clears local state. */
+  refreshSession: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
-  // On mount: try to restore an existing session from the HttpOnly cookie.
+  const refreshSession = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      setSession({ voter_id: data.voter_id, role: data.role });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
+
     const checkSession = async () => {
       try {
-        const res = await fetch(`${API_BASE}/auth/me`, {
+        const response = await fetch(`${API_BASE}/auth/me`, {
           method: 'GET',
-          credentials: 'include', // send the HttpOnly cookie
+          credentials: 'include',
         });
-        if (!cancelled && res.ok) {
-          const data = await res.json();
+        if (!cancelled && response.ok) {
+          const data = await response.json();
           setSession({ voter_id: data.voter_id, role: data.role });
         }
       } catch {
-        // Network error or backend down — treat as unauthenticated
+        // A missing auth service should not prevent the public landing page from loading.
       } finally {
         if (!cancelled) setIsCheckingSession(false);
       }
     };
-    checkSession();
+
+    void checkSession();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    const refreshInterval = window.setInterval(() => {
+      void refreshSession();
+    }, 10 * 60 * 1000);
+    return () => window.clearInterval(refreshInterval);
+  }, [refreshSession, session]);
 
   const setAuth = useCallback((newSession: AuthSession) => {
     setSession(newSession);
@@ -72,23 +88,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         credentials: 'include',
       });
     } catch {
-      // Even if the request fails, clear client-side state
+      // Clear local state even when the server is unreachable.
     } finally {
       setSession(null);
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ session, isCheckingSession, setAuth, logout }}>
+    <AuthContext.Provider value={{ session, isCheckingSession, setAuth, refreshSession, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used inside <AuthProvider>');
+  return context;
 };

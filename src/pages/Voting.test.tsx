@@ -15,6 +15,7 @@ const mockWeb3State = vi.hoisted(() => ({
   },
   isLoading: false,
   web3: null,
+  connectWallet: vi.fn().mockResolvedValue('0x123'),
 }));
 
 vi.mock('../context/Web3Context', () => ({
@@ -117,11 +118,12 @@ describe('Voting Component', () => {
     // Select candidate
     fireEvent.click(screen.getByRole('button', { name: /Alice Party A/i }));
 
-    // Confirm vote
-    const confirmButton = screen.getByRole('button', { name: /Review & confirm/i });
-    expect(confirmButton).not.toBeDisabled();
-    
-    // Simulate click
+    // Review, then confirm the irreversible transaction
+    const reviewButton = screen.getByRole('button', { name: /Review & confirm/i });
+    expect(reviewButton).not.toBeDisabled();
+    fireEvent.click(reviewButton);
+
+    const confirmButton = await screen.findByRole('button', { name: /Confirm and seal/i });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {

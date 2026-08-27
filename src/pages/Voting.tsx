@@ -36,7 +36,7 @@ const hashVoterId = (voterId: string) => {
 };
 
 const Voting = () => {
-  const { account, contract, isLoading, error } = useWeb3();
+  const { account, contract, isLoading, error, connectWallet } = useWeb3();
   const { session, logout } = useAuth();
   
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -45,7 +45,8 @@ const Voting = () => {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   
   const [stage, setStage] = useState<"choose" | "review" | "sealing" | "sealed">("choose");
-  const [txHash, setTxHash] = useState<string>("0x...");
+  const [txHash, setTxHash] = useState<string>("");
+  const [receiptCandidate, setReceiptCandidate] = useState<Candidate | null>(null);
   
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
@@ -95,9 +96,14 @@ const Voting = () => {
   // candidate ID would be rejected by the contract as invalid.
   const displayCandidates = candidates;
 
+  const handleReview = () => {
+    if (selectedCandidateId && !hasVoted) {
+      setStage("review");
+    }
+  };
+
   const handleVote = async () => {
-    if (stage === "sealing" || hasVoted) return;
-    if (!selectedCandidateId) return;
+    if (stage !== "review" || hasVoted || !selectedCandidateId) return;
 
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
@@ -105,22 +111,23 @@ const Voting = () => {
       return;
     }
 
+    const from = account || await connectWallet();
+    if (!from) return;
+
     setStage("sealing");
 
-    // Optimistic UI updates
-    setHasVoted(true);
-    setStage("sealed");
-
     try {
-      // In a real scenario we'd get the tx object back and can read tx.receipt.transactionHash
-      const tx = await contract.vote(selectedCandidateId, hashVoterId(voterId), { from: account });
-      setTxHash(tx.tx || "0x7a3f9c2e…b91c");
+      const tx = await contract.vote(selectedCandidateId, hashVoterId(voterId), { from });
+      const submittedHash = tx?.tx || tx?.receipt?.transactionHash || '';
+      setTxHash(submittedHash);
+      setReceiptCandidate(chosen || null);
+      setHasVoted(true);
+      setStage("sealed");
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
-      alert('Error casting vote. You may have already voted or the transaction failed.');
-      setHasVoted(false);
-      setStage("choose");
+      alert('The ballot was not recorded. Check the wallet transaction and try again.');
+      setStage("review");
     }
   };
 
@@ -206,23 +213,27 @@ const Voting = () => {
             </div>
             <div className="rounded-md bg-paper-warm px-4 py-3 text-right">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Blockchain
+                Wallet
               </div>
-              <div className="font-mono text-lg font-semibold text-ink mt-1">
-                Connected
-              </div>
+              {account ? (
+                <div className="font-mono text-sm font-semibold text-india-green mt-1">Connected</div>
+              ) : (
+                <button type="button" onClick={() => void connectWallet()} className="mt-1 font-mono text-sm font-semibold text-saffron hover:underline">
+                  Connect wallet
+                </button>
+              )}
             </div>
           </div>
         </section>
 
         {stage === "sealed" ? (
-          <Receipt
-            candidate={chosen || { id: 0, name: 'Hidden', party: 'Unknown', color: '#ccc', symbol: '✓', voteCount: 0 }}
-            txHash={txHash}
-            onReset={() => {
-              if (!hasVoted) setStage("choose");
-            }}
-          />
+            <Receipt
+              candidate={receiptCandidate}
+              txHash={txHash}
+              onReset={() => {
+                if (!hasVoted) setStage("choose");
+              }}
+            />
         ) : (
           <>
             {/* Cast */}
@@ -302,29 +313,36 @@ const Voting = () => {
               )}
             </section>
 
+            {stage === "review" && chosen && (
+              <section className="mt-8 rounded-md border border-saffron/40 bg-saffron/5 p-6" aria-labelledby="review-heading">
+                <div className="text-xs uppercase tracking-[0.2em] text-saffron">Final review</div>
+                <h3 id="review-heading" className="mt-2 font-display text-2xl font-semibold">Confirm your selection</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Your choice will be submitted to the blockchain after you confirm the wallet transaction. This action cannot be undone.</p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button type="button" onClick={() => setStage("choose")} className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink">Change selection</button>
+                  <button type="button" onClick={handleVote} className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90">Confirm and seal <ArrowRight className="size-4" /></button>
+                </div>
+              </section>
+            )}
+
             {/* Sticky review bar */}
-            {electionState === 1 && (
+            {electionState === 1 && stage === "choose" && (
               <div className="sticky bottom-6 mt-10 flex items-center justify-between rounded-md border border-hairline bg-ink px-6 py-4 text-paper shadow-[0_20px_50px_-20px_rgba(11,31,58,0.5)]">
                 <div className="text-sm">
                   {chosen ? (
                     <span>
-                      Selected:{" "}
-                      <span className="font-semibold">{chosen.name}</span> ·{" "}
-                      {chosen.party}
+                      Selected:{" "}<span className="font-semibold">{chosen.name}</span> · {chosen.party}
                     </span>
                   ) : (
-                    <span className="text-paper/60">
-                      Select a candidate to continue
-                    </span>
+                    <span className="text-paper/60">Select a candidate to continue</span>
                   )}
                 </div>
                 <button
-                  disabled={!chosen || stage === "sealing" || hasVoted}
-                  onClick={handleVote}
+                  disabled={!chosen || hasVoted}
+                  onClick={handleReview}
                   className="inline-flex items-center gap-2 rounded-md bg-saffron px-5 py-2.5 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:bg-paper/20"
                 >
-                  {stage === "sealing" ? "Sealing on chain…" : "Review & confirm"}
-                  {stage !== "sealing" && <ArrowRight className="size-4" />}
+                  Review & confirm <ArrowRight className="size-4" />
                 </button>
               </div>
             )}
@@ -354,7 +372,7 @@ function Receipt({
   txHash,
   onReset,
 }: {
-  candidate: Candidate;
+  candidate: Candidate | null;
   txHash: string;
   onReset: () => void;
 }) {
@@ -399,10 +417,10 @@ function Receipt({
         </div>
         <dl className="space-y-3 rounded-md bg-paper-warm p-6 font-mono text-xs">
           <Row k="Constituency" v="Local / Dev Network" />
-          <Row k="Tx hash" v={txHash} />
+          <Row k="Tx hash" v={txHash || 'Pending confirmation'} />
           <Row k="Timestamp" v={new Date().toLocaleString("en-IN")} />
-          <Row k="Signed by" v={`Voter · ${candidate.symbol}`} />
-          <Row k="Chain" v="prajatantra-mainnet" />
+          {candidate && <Row k="Selection" v={`${candidate.name} · ${candidate.party}`} />}
+          <Row k="Chain" v="Configured network" />
         </dl>
       </div>
     </section>
