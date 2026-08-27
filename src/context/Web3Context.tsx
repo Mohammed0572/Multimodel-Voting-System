@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import Web3 from 'web3';
 // @ts-expect-error @truffle/contract does not publish compatible TypeScript declarations.
 import TruffleContract from '@truffle/contract';
@@ -8,6 +8,8 @@ declare global {
   interface Window {
     ethereum?: {
       request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on?: (event: string, handler: (...args: any[]) => void) => void;
+      removeListener?: (event: string, handler: (...args: any[]) => void) => void;
     };
   }
 }
@@ -18,6 +20,7 @@ interface Web3ContextType {
   contract: any | null;
   isLoading: boolean;
   error: string | null;
+  connectWallet: () => Promise<string | null>;
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
@@ -37,86 +40,111 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const connectWallet = useCallback(async () => {
+    if (!window.ethereum || !web3) {
+      setError('MetaMask is required to sign voting transactions.');
+      return null;
+    }
+
+    try {
+      const requestedAccounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const nextAccount = Array.isArray(requestedAccounts)
+        ? String(requestedAccounts[0] || '')
+        : '';
+
+      if (!nextAccount) {
+        throw new Error('No MetaMask account is connected.');
+      }
+
+      setAccount(nextAccount);
+      if (contract) {
+        contract.defaults({ from: nextAccount });
+      }
+      setError(null);
+      return nextAccount;
+    } catch (err: any) {
+      const message = err?.code === 4001
+        ? 'Wallet connection was cancelled.'
+        : err?.message || 'Unable to connect to MetaMask.';
+      setError(message);
+      return null;
+    }
+  }, [contract, web3]);
+
   useEffect(() => {
+    let cancelled = false;
+
     const initWeb3 = async () => {
       try {
         const VOTING_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
         if (!window.ethereum) {
-          throw new Error('MetaMask is required to sign voting transactions.');
+          throw new Error('MetaMask is required to connect to the voting network.');
         }
 
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        // Read existing permissions silently. A wallet popup should only appear
+        // when a protected flow explicitly calls connectWallet().
         const currentWeb3 = new Web3(window.ethereum as any);
         const expectedChainId = Number(import.meta.env.VITE_NETWORK_ID || 11155111);
         const chainId = await currentWeb3.eth.getChainId();
-        
-        // Ganache by default uses Network ID 5777 but Chain ID 1337
         const isGanache = expectedChainId === 5777 && Number(chainId) === 1337;
         if (Number(chainId) !== expectedChainId && !isGanache) {
           throw new Error(
             `Wrong blockchain network. Expected chain ID ${expectedChainId}, received ${chainId}.`
           );
         }
-        
-        setWeb3(currentWeb3);
-        
-        const accounts = await currentWeb3.eth.getAccounts();
-        if (!accounts[0]) {
-          throw new Error('No MetaMask account is connected.');
-        }
-        setAccount(accounts[0]);
 
+        const accounts = await currentWeb3.eth.getAccounts();
         const VotingContract = TruffleContract(votingArtifacts);
         VotingContract.setProvider(currentWeb3.currentProvider);
-        VotingContract.defaults({ from: accounts[0] });
-        
-        let instance;
-        if (VOTING_CONTRACT_ADDRESS && VOTING_CONTRACT_ADDRESS !== "0xYOUR_CONTRACT_ADDRESS_HERE") {
-          instance = await VotingContract.at(VOTING_CONTRACT_ADDRESS);
-        } else {
-          instance = await VotingContract.deployed();
+        if (accounts[0]) {
+          VotingContract.defaults({ from: accounts[0] });
         }
-        
-        setContract(instance);
-        setIsLoading(false);
+
+        const instance = VOTING_CONTRACT_ADDRESS && VOTING_CONTRACT_ADDRESS !== "0xYOUR_CONTRACT_ADDRESS_HERE"
+          ? await VotingContract.at(VOTING_CONTRACT_ADDRESS)
+          : await VotingContract.deployed();
+
+        if (!cancelled) {
+          setWeb3(currentWeb3);
+          setAccount(accounts[0] || null);
+          setContract(instance);
+          setIsLoading(false);
+        }
       } catch (err: any) {
-        console.error("Failed to initialize web3 or contract.", err);
-        setError(err.message || String(err));
-        setIsLoading(false);
+        if (!cancelled) {
+          console.error("Failed to initialize web3 or contract.", err);
+          setError(err.message || String(err));
+          setIsLoading(false);
+        }
       }
     };
 
     initWeb3();
 
     const handleAccountsChanged = (accounts: string[]) => {
-      if (accounts.length > 0) {
-        setAccount(accounts[0]);
-      } else {
-        setAccount(null);
-      }
+      setAccount(accounts[0] || null);
     };
 
     const handleChainChanged = () => {
       window.location.reload();
     };
 
-    const ethereum = (window as any).ethereum;
-    if (ethereum && ethereum.on) {
-      ethereum.on('accountsChanged', handleAccountsChanged);
-      ethereum.on('chainChanged', handleChainChanged);
-    }
+    const ethereum = window.ethereum;
+    ethereum?.on?.('accountsChanged', handleAccountsChanged);
+    ethereum?.on?.('chainChanged', handleChainChanged);
 
     return () => {
-      if (ethereum && ethereum.removeListener) {
-        ethereum.removeListener('accountsChanged', handleAccountsChanged);
-        ethereum.removeListener('chainChanged', handleChainChanged);
-      }
+      cancelled = true;
+      ethereum?.removeListener?.('accountsChanged', handleAccountsChanged);
+      ethereum?.removeListener?.('chainChanged', handleChainChanged);
     };
   }, []);
 
   return (
-    <Web3Context.Provider value={{ web3, account, contract, isLoading, error }}>
+    <Web3Context.Provider value={{ web3, account, contract, isLoading, error, connectWallet }}>
       {children}
     </Web3Context.Provider>
   );
 };
+
+export default Web3Context;

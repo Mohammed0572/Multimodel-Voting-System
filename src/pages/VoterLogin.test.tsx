@@ -49,7 +49,7 @@ describe('VoterLogin Component', () => {
     fireEvent(input, pasteEvent);
     
     // Check if error message is shown
-    expect(screen.getByText(/Invalid paste format or length exceeded/i)).toBeInTheDocument();
+    expect(screen.getByText(/Use up to 64 characters/i)).toBeInTheDocument();
   });
 
   it('allows valid paste input', () => {
@@ -66,7 +66,7 @@ describe('VoterLogin Component', () => {
     
     fireEvent(input, pasteEvent);
     
-    // Check if error message is NOT shown for valid paste
-    expect(screen.queryByText(/Invalid paste format or length exceeded/i)).not.toBeInTheDocument();
+    expect(input).toHaveValue('VTR-84291');
+    expect(screen.queryByText(/Use up to 64 characters/i)).not.toBeInTheDocument();
   });
 });
