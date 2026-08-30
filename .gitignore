@@ -47,8 +47,7 @@ Desktop.ini
 src/contracts/Migrations.json
 src/contracts/Voting.json
 
+# ── Face Recognition Enrollment Images ─────────────
+server/face-recognition/enrollment_images/*
+!server/face-recognition/enrollment_images/.gitkeep
 
-server\face-recognition\enrollment_images
-*.jpg
-server/face-recognition/mass_enroll.py
-server/face-recognition/mass_enroll.py
