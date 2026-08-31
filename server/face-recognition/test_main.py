@@ -6,6 +6,7 @@ import numpy as np
 
 # Set required environment variable before importing main
 os.environ["FASTAPI_SECRET_KEY"] = "supersecretkey"
+os.environ["ADMIN_USERNAME"] = "admin_user"
 os.environ["ADMIN_PASSWORD"] = "securepassword123"
 
 import main
@@ -30,7 +31,7 @@ def setup_database():
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO admins (admin_id, password_hash) VALUES (?, ?)",
-            ("admin", main.get_password_hash("securepassword123")),
+            ("admin_user", main.get_password_hash("securepassword123")),
         )
         conn.commit()
         

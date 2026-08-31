@@ -44,8 +44,8 @@ Desktop.ini
 .gemini/
 
 # ── Contract Artifacts ───────────────────────────
-src/contracts/Migrations.json
-src/contracts/Voting.json
+src/contracts/
+contracts/
 
 # ── Face Recognition Enrollment Images ─────────────
 server/face-recognition/enrollment_images/*
