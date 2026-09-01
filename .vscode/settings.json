@@ -11,5 +11,11 @@
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
   ],
-  "python.defaultInterpreterPath": "${workspaceFolder}/Database_API/.venv/Scripts/python.exe"
+  "python.defaultInterpreterPath": "${workspaceFolder}/server/face-recognition/.venv/Scripts/python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/server/face-recognition"
+  ],
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/server/face-recognition"
+  ]
 }

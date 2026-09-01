@@ -21,6 +21,15 @@ interface Candidate {
   color: string;
 }
 
+interface Eligibility {
+  voter_id: string;
+  student_name: string;
+  branch: string;
+  class_name: string;
+  batch: string;
+  eligible: boolean;
+}
+
 const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
 const SYMBOLS = ["🪷", "✋", "🌾", "🚲", "⊘"];
 
@@ -42,6 +51,8 @@ const Voting = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [electionState, setElectionState] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
+  const [eligibility, setEligibility] = useState<Eligibility | null>(null);
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   
   const [stage, setStage] = useState<"choose" | "review" | "sealing" | "sealed">("choose");
@@ -56,6 +67,18 @@ const Voting = () => {
     }
 
     try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+      const eligibilityResponse = await fetch(`${apiBase}/voter/eligibility`, { credentials: 'include' });
+      if (!eligibilityResponse.ok) {
+        setEligibility(null);
+        setIsCheckingEligibility(false);
+        return;
+      }
+      const eligibilityData = await eligibilityResponse.json() as Eligibility;
+      setEligibility(eligibilityData);
+      setIsCheckingEligibility(false);
+      if (!eligibilityData.eligible) return;
+
       const stateResult = await contract.getElectionState();
       setElectionState(stateResult.toNumber());
 
@@ -201,8 +224,8 @@ const Voting = () => {
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="size-4" /> Local Constituency
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-india-green">
-                  <ShieldCheck className="size-4" /> Eligibility verified
+                <span className={`inline-flex items-center gap-1.5 ${eligibility?.eligible ? 'text-india-green' : 'text-saffron'}`}>
+                  <ShieldCheck className="size-4" /> {eligibility?.eligible ? 'Eligibility verified' : 'Eligibility pending'}
                 </span>
                 {hasVoted && (
                   <span className="inline-flex items-center gap-1.5 text-india-green">
@@ -235,6 +258,17 @@ const Voting = () => {
               }}
             />
         ) : (
+          <>
+            {isCheckingEligibility ? (
+              <section className="mt-10 rounded-md border border-hairline bg-paper p-8 text-center text-muted-foreground">Checking your voter eligibility…</section>
+            ) : !eligibility?.eligible ? (
+              <section className="mt-10 rounded-md border border-saffron/40 bg-saffron/5 p-8" aria-labelledby="eligibility-heading">
+                <div className="text-xs uppercase tracking-[0.2em] text-saffron">Eligibility check</div>
+                <h2 id="eligibility-heading" className="mt-2 font-display text-2xl font-semibold">{eligibility ? 'You are not eligible to vote yet' : 'We could not confirm your eligibility'}</h2>
+                <p className="mt-3 text-sm text-muted-foreground">{eligibility ? 'Your face was authenticated, but your CSBS ID card has not been approved by the administrator. Please register your details or contact the election administrator.' : 'Please register your details or contact the election administrator before trying again.'}</p>
+                {eligibility && <div className="mt-5 grid gap-2 rounded-md border border-hairline bg-paper p-4 text-sm sm:grid-cols-2"><span><strong>USN:</strong> {eligibility.voter_id}</span><span><strong>Name:</strong> {eligibility.student_name || 'Not available'}</span><span><strong>Class:</strong> {eligibility.class_name || 'Not registered'}</span><span><strong>Branch:</strong> {eligibility.branch || 'Not registered'}</span></div>}
+              </section>
+            ) : (
           <>
             {/* Cast */}
             <section className="mt-10">
@@ -347,6 +381,7 @@ const Voting = () => {
               </div>
             )}
           </>
+            )}
         )}
 
         {stage === "sealing" && (

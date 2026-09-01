@@ -5,6 +5,7 @@ import face_recognition
 
 DB_PATH = "face_voter_db.sqlite"
 IMAGES_DIR = "enrollment_images"
+CSBS_SEED_PATH = "csbs_students.json"
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -13,9 +14,37 @@ def init_db():
         CREATE TABLE IF NOT EXISTS voters (
             voter_id       TEXT PRIMARY KEY NOT NULL,
             role           TEXT NOT NULL DEFAULT 'user',
-            face_encoding  TEXT NOT NULL
+            face_encoding  TEXT NOT NULL DEFAULT '',
+            student_name   TEXT NOT NULL DEFAULT '',
+            branch         TEXT NOT NULL DEFAULT '',
+            class_name     TEXT NOT NULL DEFAULT '',
+            batch           TEXT NOT NULL DEFAULT '',
+            id_verified    INTEGER NOT NULL DEFAULT 0,
+            verified_by    TEXT,
+            verified_at    TEXT
         )
     """)
+    existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(voters)").fetchall()}
+    for column, definition in {
+        "student_name": "TEXT NOT NULL DEFAULT ''",
+        "branch": "TEXT NOT NULL DEFAULT ''",
+        "class_name": "TEXT NOT NULL DEFAULT ''",
+        "batch": "TEXT NOT NULL DEFAULT ''",
+        "id_verified": "INTEGER NOT NULL DEFAULT 0",
+        "verified_by": "TEXT",
+        "verified_at": "TEXT",
+    }.items():
+        if column not in existing_columns:
+            cursor.execute(f"ALTER TABLE voters ADD COLUMN {column} {definition}")
+    if os.path.exists(CSBS_SEED_PATH):
+        for student in json.load(open(CSBS_SEED_PATH, encoding="utf-8")):
+            cursor.execute(
+                """INSERT INTO voters (voter_id, role, student_name, branch, class_name, batch)
+                   VALUES (?, 'user', ?, 'CB', 'CSBS', ?)
+                   ON CONFLICT(voter_id) DO UPDATE SET student_name=excluded.student_name,
+                     branch=excluded.branch, class_name=excluded.class_name, batch=excluded.batch""",
+                (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023"),
+            )
     conn.commit()
     return conn
 
