@@ -1,4 +1,5 @@
 import os
+import json
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
@@ -63,6 +64,51 @@ def test_enroll_face_success(mock_embed):
         )
         assert response.status_code == 201
         assert "enrolled successfully" in response.json()["message"]
+
+@patch("main.get_face_embedding")
+def test_register_user_persists_and_can_verify_after_restart(mock_embed):
+    mock_embed.return_value = np.ones(128)
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/register-user",
+            json={
+                "voter_id": "1KG23CB052",
+                "image_base64": DUMMY_IMAGE,
+                "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE],
+                "name": "Test User",
+                "usn": "1KG23CB052",
+            },
+        )
+        assert response.status_code == 201
+
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT voter_id, role, face_encoding, name, usn FROM voters WHERE voter_id = ?",
+            ("1kg23cb052",),
+        ).fetchone()
+
+    assert row is not None
+    assert row["role"] == "user"
+    assert row["name"] == "Test User"
+    assert row["usn"] == "1KG23CB052"
+    assert np.array(json.loads(row["face_encoding"])).shape == (128,)
+
+    with patch("main.get_face_details") as mock_details, \
+         patch("main.compare_faces") as mock_compare, \
+         patch("main.calculate_ear") as mock_ear, \
+         TestClient(app) as restarted_client:
+        mock_details.return_value = (np.ones(128), {"left_eye": [], "right_eye": []})
+        mock_compare.return_value = (True, 0.0)
+        mock_ear.side_effect = [0.3, 0.3, 0.2, 0.2]
+
+        verify_response = restarted_client.post(
+            "/api/v1/verify-face",
+            json={"voter_id": "1KG23CB052", "images_base64": [DUMMY_IMAGE, DUMMY_IMAGE]},
+        )
+
+    assert verify_response.status_code == 200
+    assert verify_response.json()["voter_id"] == "1kg23cb052"
 
 @patch("main.get_face_details")
 @patch("main.compare_faces")

@@ -27,6 +27,7 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
+    "tesseract.js": "^7.0.0",
     "web3": "^1.10.4"
   },
   "devDependencies": {

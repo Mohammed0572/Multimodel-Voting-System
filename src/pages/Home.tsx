@@ -16,8 +16,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-
-
       {/* HERO */}
       <section className="border-b border-hairline">
         <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-[1.1fr_0.9fr] md:py-32">
@@ -27,25 +25,35 @@ export default function Home() {
               Prototype · Configured test network
             </div>
             <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
-              {t('home.hero_title1') || 'Your vote.'}
+              {t("home.hero_title1") || "Your vote."}
               <br />
-              <span className="text-saffron">{t('home.hero_title2') || 'Sealed on chain.'}</span>
+              <span className="text-saffron">
+                {t("home.hero_title2") || "Sealed on chain."}
+              </span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              {t('home.hero_desc') || "Prajatantra is a voting-system prototype that combines voter-ID verification, face authentication, and blockchain-backed ballot recording. Explore the flow, review the source, and connect a wallet only when you are ready to cast a test ballot."}
+              {t("home.hero_desc") ||
+                "Prajatantra is a voting-system prototype that combines voter-ID verification, face authentication, and blockchain-backed ballot recording. Explore the flow, review the source, and connect a wallet only when you are ready to cast a test ballot."}
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 to="/login"
                 className="inline-flex items-center gap-2 rounded-md bg-saffron px-6 py-3 text-sm font-semibold text-paper shadow-sm hover:bg-saffron/90"
               >
-                {t('home.secure_login') || 'Secure Login'} <ArrowRight className="size-4" />
+                {t("home.secure_login") || "Secure Login"}{" "}
+                <ArrowRight className="size-4" />
+              </Link>
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-md border border-india-blue/30 bg-paper px-6 py-3 text-sm font-semibold text-india-blue shadow-sm hover:bg-india-blue/5"
+              >
+                Register ID Card
               </Link>
               <a
                 href="#how"
                 className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-6 py-3 text-sm font-semibold text-ink hover:border-ink"
               >
-                {t('home.how_it_works') || 'How it works'}
+                {t("home.how_it_works") || "How it works"}
               </a>
             </div>
             <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
@@ -74,10 +82,13 @@ export default function Home() {
               Multimodal authentication
             </div>
             <h2 className="mt-3 font-display text-4xl font-semibold text-paper md:text-5xl">
-A clear path from identity to ballot.
+              A clear path from identity to ballot.
             </h2>
             <p className="mt-4 text-paper/70">
-The prototype separates voter identity verification from blockchain submission. You provide a voter ID, complete face verification, and then use a connected wallet to sign the test transaction.
+              The prototype separates voter identity verification from
+              blockchain submission. You provide a voter ID, complete face
+              verification, and then use a connected wallet to sign the test
+              transaction.
             </p>
           </div>
           <div className="mt-16 grid gap-px overflow-hidden rounded-md border border-paper/10 bg-paper/10 md:grid-cols-2">
@@ -120,7 +131,7 @@ The prototype separates voter identity verification from blockchain submission. 
               </h2>
             </div>
             <div className="hidden text-right text-sm text-muted-foreground md:block">
-                Prototype flow
+              Prototype flow
               <br />
               <span className="font-mono text-ink">4 guided steps</span>
             </div>
@@ -177,9 +188,12 @@ The prototype separates voter identity verification from blockchain submission. 
                 Every ballot, publicly verifiable.
               </h2>
               <p className="mt-4 text-muted-foreground">
-                In a configured deployment, observers can inspect the transaction hash and verify the ballot record on the selected network. This demo does not publish a production explorer or claim election-grade anonymity.
+                In a configured deployment, observers can inspect the
+                transaction hash and verify the ballot record on the selected
+                network. This demo does not publish a production explorer or
+                claim election-grade anonymity.
               </p>
-                <a
+              <a
                 href="#chain"
                 className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-ashoka hover:underline"
               >
@@ -244,12 +258,13 @@ The prototype separates voter identity verification from blockchain submission. 
                 Authentication frames are sent only to the configured API
               </li>
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-4 text-india-green" />{" "}
-                Voter identity hashes are used for duplicate-vote checks
+                <ShieldCheck className="mt-0.5 size-4 text-india-green" /> Voter
+                identity hashes are used for duplicate-vote checks
               </li>
               <li className="flex gap-3">
                 <ShieldCheck className="mt-0.5 size-4 text-india-green" />{" "}
-                Smart-contract rules reject inactive elections and duplicate votes
+                Smart-contract rules reject inactive elections and duplicate
+                votes
               </li>
             </ul>
           </div>
@@ -260,13 +275,16 @@ The prototype separates voter identity verification from blockchain submission. 
             </h3>
             <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
               <li className="flex gap-3">
-                <Languages className="mt-0.5 size-4 text-ashoka" />                 Language-ready interface with English and Hindi content paths
+                <Languages className="mt-0.5 size-4 text-ashoka" />{" "}
+                Language-ready interface with English and Hindi content paths
               </li>
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-4 text-ashoka" />                 Semantic controls, live status messages, and keyboard-friendly flows
+                <ShieldCheck className="mt-0.5 size-4 text-ashoka" /> Semantic
+                controls, live status messages, and keyboard-friendly flows
               </li>
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-4 text-ashoka" />                 Clear recovery guidance for camera, wallet, and network failures
+                <ShieldCheck className="mt-0.5 size-4 text-ashoka" /> Clear
+                recovery guidance for camera, wallet, and network failures
               </li>
             </ul>
           </div>
@@ -330,7 +348,8 @@ The prototype separates voter identity verification from blockchain submission. 
                 </span>
               </div>
               <p className="mt-4 max-w-sm text-sm text-paper/60">
-                An open-source voting-system prototype for exploring identity verification, wallet signing, and blockchain-backed records.
+                An open-source voting-system prototype for exploring identity
+                verification, wallet signing, and blockchain-backed records.
               </p>
             </div>
             <div className="text-sm">
@@ -371,7 +390,10 @@ The prototype separates voter identity verification from blockchain submission. 
               © {new Date().getFullYear()} Government of India · All rights
               reserved
             </div>
-            <div className="font-mono">              chain: configured-network · prototype</div>
+            <div className="font-mono">
+              {" "}
+              chain: configured-network · prototype
+            </div>
           </div>
         </div>
       </footer>

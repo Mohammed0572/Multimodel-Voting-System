@@ -27,6 +27,7 @@ import hashlib
 import pickle
 import sqlite3
 import logging
+import re
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -122,11 +123,13 @@ limiter = _build_limiter()
 # DATABASE SETUP  (unchanged from your original)
 # ═══════════════════════════════════════════════════════════════════════════
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "face_voter_db.sqlite")
+DB_PATH = settings.FACE_DB_PATH or str(Path(__file__).resolve().with_name("face_voter_db.sqlite"))
 
 
 @contextmanager
 def get_db():
+    if DB_PATH != ":memory:":
+        Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
@@ -146,9 +149,22 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS voters (
                 voter_id       TEXT PRIMARY KEY NOT NULL,
                 role           TEXT NOT NULL DEFAULT 'user',
-                face_encoding  TEXT NOT NULL
+                face_encoding  TEXT NOT NULL,
+                name           TEXT,
+                usn            TEXT,
+                branch         TEXT,
+                validity       TEXT,
+                dob            TEXT
             )
         """)
+
+        # Try to add columns if table already existed without them
+        for col in ["name", "usn", "branch", "validity", "dob"]:
+            try:
+                cursor.execute(f"ALTER TABLE voters ADD COLUMN {col} TEXT")
+            except sqlite3.OperationalError:
+                pass # Column already exists
+
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_voters_role ON voters(role);")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS admins (
@@ -308,9 +324,45 @@ def get_face_embedding(image: np.ndarray) -> Optional[np.ndarray]:
     return details[0] if details else None
 
 
+def get_enrollment_embedding(images_base64: list[str]) -> np.ndarray:
+    embeddings: list[np.ndarray] = []
+
+    for index, image_base64 in enumerate(images_base64, start=1):
+        try:
+            image = decode_base64_image(image_base64)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid enrollment image #{index}: {exc}",
+            ) from exc
+
+        embedding = get_face_embedding(image)
+        if embedding is not None:
+            embeddings.append(embedding)
+
+    if not embeddings:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No face detected in the enrollment image. Keep your face centered and try again.",
+        )
+
+    return _average_encodings(embeddings)
+
+
 def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    face_locations = face_recognition.face_locations(rgb, model="hog")
+
+    height, width = rgb.shape[:2]
+    if height < 80 or width < 80:
+        return None
+
+    detection_scale = 0.25 if min(height, width) >= 320 else 1.0
+    if detection_scale == 1.0:
+        small_rgb = rgb
+    else:
+        small_rgb = cv2.resize(rgb, (0, 0), fx=detection_scale, fy=detection_scale)
+
+    face_locations = face_recognition.face_locations(small_rgb, model="hog")
 
     if not face_locations:
         return None
@@ -320,11 +372,16 @@ def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
             max(face_locations, key=lambda loc: (loc[2] - loc[0]) * (loc[1] - loc[3]))
         ]
 
-    encodings = face_recognition.face_encodings(rgb, face_locations)
+    # Rescale locations back to original image for encoding
+    scaled_locations = [
+        tuple(int(coord / detection_scale) for coord in loc) for loc in face_locations
+    ]
+
+    encodings = face_recognition.face_encodings(rgb, scaled_locations)
     if not encodings:
         return None
 
-    landmarks = face_recognition.face_landmarks(rgb, face_locations)
+    landmarks = face_recognition.face_landmarks(rgb, scaled_locations)
     if not landmarks:
         return None
 
@@ -502,6 +559,11 @@ class AdminLoginRequest(BaseModel):
 class AuthResponse(BaseModel):
     role: str
     voter_id: str
+    name: Optional[str] = None
+    usn: Optional[str] = None
+    branch: Optional[str] = None
+    validity: Optional[str] = None
+    dob: Optional[str] = None
     # token is now delivered via HttpOnly cookie, NOT in the response body
     # distance REMOVED — was leaking face match proximity to client
 
@@ -510,6 +572,12 @@ class EnrollRequest(BaseModel):
     voter_id: str
     role: str = "user"
     image_base64: str
+    images_base64: Optional[list[str]] = None
+    name: Optional[str] = None
+    usn: Optional[str] = None
+    branch: Optional[str] = None
+    validity: Optional[str] = None
+    dob: Optional[str] = None
 
     @field_validator("voter_id")
     @classmethod
@@ -520,6 +588,17 @@ class EnrollRequest(BaseModel):
         if len(cleaned) > 100:
             raise ValueError("voter_id must be 100 characters or fewer.")
         return cleaned
+
+    @field_validator("images_base64")
+    @classmethod
+    def image_sequence_must_not_be_empty(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+        if v is not None and not v:
+            raise ValueError("images_base64 must not be empty when provided.")
+        return v
+
+
+class ExtractIDRequest(BaseModel):
+    image_base64: str
 
 
 
@@ -543,6 +622,14 @@ async def auth_refresh(request: Request, response: Response):
     if not voter_id or not role:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
+            (voter_id.lower(),),
+        )
+        row = cursor.fetchone()
+
     new_token = create_jwt(voter_id, role)
 
     response.set_cookie(
@@ -555,12 +642,59 @@ async def auth_refresh(request: Request, response: Response):
     )
 
     log.info("[REFRESH] Token renewed for %s (role=%s)", voter_id, role)
-    return {"role": role, "voter_id": voter_id, "message": "Token refreshed"}
+    return {
+        "role": role,
+        "voter_id": voter_id,
+        "name": row["name"] if row else None,
+        "usn": row["usn"] if row else None,
+        "branch": row["branch"] if row else None,
+        "validity": row["validity"] if row else None,
+        "dob": row["dob"] if row else None,
+        "message": "Token refreshed",
+    }
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/v1/extract-id")
+@limiter.limit("10/minute")
+async def extract_id(request: Request, body: ExtractIDRequest):
+    """Extracts Name, USN, Branch, Validity, and DOB from an ID card image."""
+    if ocr_reader is None:
+        raise HTTPException(status_code=500, detail="OCR not initialized.")
+
+    img = decode_base64_image(body.image_base64)
+    # easyocr reads BGR/RGB directly
+    results = ocr_reader.readtext(img, detail=0)
+
+    details = {
+        "name": "",
+        "usn": "",
+        "branch": "",
+        "validity": "",
+        "dob": ""
+    }
+
+    usn_pattern = re.compile(r'\d[A-Z]{2}\d{2}[A-Z]{2}\d{3}', re.IGNORECASE)
+    dob_pattern = re.compile(r'\d{2}[/-]\d{2}[/-]\d{4}')
+
+    for i, text in enumerate(results):
+        text = text.strip()
+
+        if usn_pattern.search(text) and not details["usn"]:
+            details["usn"] = usn_pattern.search(text).group().upper()
+
+        elif dob_pattern.search(text) and not details["dob"]:
+            details["dob"] = dob_pattern.search(text).group()
+
+        elif "validity" in text.lower() or "valid till" in text.lower() or "expiry" in text.lower():
+            if i + 1 < len(results):
+                details["validity"] = results[i + 1]
+
+    # fallback heuristics
+    return {"extracted": details, "raw": results}
 
 @app.get("/health")
 @limiter.limit("60/minute")          # monitoring tools get generous allowance
@@ -676,11 +810,11 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
 
     embedding = base_embedding
 
-    # Fetch stored encoding
+    # Fetch stored encoding and registration details
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT role, face_encoding FROM voters WHERE voter_id = ?",
+            "SELECT role, face_encoding, name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
             (voter_id,),
         )
         row = cursor.fetchone()
@@ -692,6 +826,11 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         )
 
     role: str = row["role"]
+    profile_name = row["name"]
+    profile_usn = row["usn"]
+    profile_branch = row["branch"]
+    profile_validity = row["validity"]
+    profile_dob = row["dob"]
 
     try:
         stored_encoding = np.array(json.loads(row["face_encoding"]), dtype=np.float64)
@@ -726,7 +865,15 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     token = create_jwt(voter_id, role)
 
     response = JSONResponse(
-        content={"role": role, "voter_id": voter_id},
+        content={
+            "role": role,
+            "voter_id": voter_id,
+            "name": profile_name,
+            "usn": profile_usn,
+            "branch": profile_branch,
+            "validity": profile_validity,
+            "dob": profile_dob,
+        },
         status_code=status.HTTP_200_OK,
     )
     response.set_cookie(
@@ -761,7 +908,30 @@ async def auth_me(request: Request):
             detail="Not authenticated.",
         )
     payload = decode_jwt(token)
-    return {"voter_id": payload.get("voter_id"), "role": payload.get("role")}
+    voter_id = payload.get("voter_id")
+    if not voter_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid session.",
+        )
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
+            (str(voter_id).lower(),),
+        )
+        row = cursor.fetchone()
+
+    return {
+        "voter_id": voter_id,
+        "role": payload.get("role"),
+        "name": row["name"] if row else None,
+        "usn": row["usn"] if row else None,
+        "branch": row["branch"] if row else None,
+        "validity": row["validity"] if row else None,
+        "dob": row["dob"] if row else None,
+    }
 
 
 @app.post("/api/v1/auth/logout")
@@ -797,20 +967,7 @@ async def enroll_face(
             detail="role must be 'user' or 'admin'.",
         )
 
-    try:
-        image = decode_base64_image(payload.image_base64)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid image: {exc}",
-        )
-
-    embedding = get_face_embedding(image)
-    if embedding is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No face detected in the enrollment image.",
-        )
+    embedding = get_enrollment_embedding(payload.images_base64 or [payload.image_base64])
 
     encoding_json = json.dumps(embedding.tolist())
 
@@ -830,3 +987,41 @@ async def enroll_face(
 
     log.info("[ENROLL] voter='%s' role='%s' enrolled/updated by admin.", voter_id, role)
     return {"message": f"Voter '{voter_id}' enrolled successfully.", "role": role}
+
+@app.post("/api/v1/register-user", status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+async def register_user(
+    request: Request,
+    payload: EnrollRequest
+):
+    """
+    Self-registration endpoint using ID card details and face.
+    Rate limited: 10 requests/minute per IP.
+    """
+    voter_id = payload.voter_id.strip().lower()
+    role = "user" # Always user for self-registration
+
+    embedding = get_enrollment_embedding(payload.images_base64 or [payload.image_base64])
+
+    encoding_json = json.dumps(embedding.tolist())
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO voters (voter_id, role, face_encoding, name, usn, branch, validity, dob)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(voter_id) DO UPDATE SET
+                face_encoding = excluded.face_encoding,
+                name = excluded.name,
+                usn = excluded.usn,
+                branch = excluded.branch,
+                validity = excluded.validity,
+                dob = excluded.dob
+            """,
+            (voter_id, role, encoding_json, payload.name, payload.usn, payload.branch, payload.validity, payload.dob),
+        )
+        conn.commit()
+
+    log.info("[REGISTER] voter='%s' self-registered.", voter_id)
+    return {"message": f"Voter '{voter_id}' registered successfully.", "role": role}
