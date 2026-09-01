@@ -34,8 +34,6 @@ export function extractFields(text: string) {
   };
 
   for (const line of lines) {
-    const lowerLine = line.toLowerCase();
-
     if (!extracted.usn) {
       const usnMatch =
         line.match(
