@@ -124,6 +124,7 @@ limiter = _build_limiter()
 # ═══════════════════════════════════════════════════════════════════════════
 
 DB_PATH = settings.FACE_DB_PATH or str(Path(__file__).resolve().with_name("face_voter_db.sqlite"))
+CSBS_SEED_PATH = str(Path(__file__).resolve().with_name("csbs_students.json"))
 
 
 @contextmanager
@@ -166,6 +167,18 @@ def init_db() -> None:
                 pass # Column already exists
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_voters_role ON voters(role);")
+        existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(voters)").fetchall()}
+        for column, definition in {
+            "student_name": "TEXT NOT NULL DEFAULT ''",
+            "branch": "TEXT NOT NULL DEFAULT ''",
+            "class_name": "TEXT NOT NULL DEFAULT ''",
+            "batch": "TEXT NOT NULL DEFAULT ''",
+            "id_verified": "INTEGER NOT NULL DEFAULT 0",
+            "verified_by": "TEXT",
+            "verified_at": "TEXT",
+        }.items():
+            if column not in existing_columns:
+                cursor.execute(f"ALTER TABLE voters ADD COLUMN {column} {definition}")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS admins (
                 admin_id      TEXT PRIMARY KEY NOT NULL,
@@ -175,6 +188,20 @@ def init_db() -> None:
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_admins_active ON admins(is_active);")
+        if os.path.exists(CSBS_SEED_PATH):
+            for student in json.loads(Path(CSBS_SEED_PATH).read_text()):
+                cursor.execute(
+                    """
+                    INSERT INTO voters (voter_id, role, face_encoding, student_name, branch, class_name, batch)
+                    VALUES (?, 'user', '', ?, 'CB', 'CSBS', ?)
+                    ON CONFLICT(voter_id) DO UPDATE SET
+                        student_name = excluded.student_name,
+                        branch = excluded.branch,
+                        class_name = excluded.class_name,
+                        batch = excluded.batch
+                    """,
+                    (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023"),
+                )
         conn.commit()
     log.info("Database initialised at %s", DB_PATH)
 
@@ -601,6 +628,10 @@ class ExtractIDRequest(BaseModel):
     image_base64: str
 
 
+class EligibilityVerificationRequest(BaseModel):
+    verified: bool
+
+
 
 @app.post("/api/v1/auth/refresh")
 async def auth_refresh(request: Request, response: Response):
@@ -944,6 +975,92 @@ async def auth_logout(request: Request):
     response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="lax")
     log.info("[AUTH] Logout — cookie cleared for %s", request.client.host if request.client else "unknown")
     return response
+
+
+@app.get("/api/v1/admin/voters")
+@limiter.limit("30/minute")
+async def admin_voters(request: Request, _admin: dict = Depends(require_admin)):
+    """Return the CSBS voter registry from SQLite for the admin dashboard."""
+    with get_db() as conn:
+        rows = conn.execute(
+            """
+            SELECT voter_id, role
+                 , student_name, branch, class_name, batch, id_verified, verified_by, verified_at
+            FROM voters
+            WHERE voter_id LIKE '1kg23cb%'
+               OR voter_id = '1kg24cb400'
+            ORDER BY voter_id
+            """
+        ).fetchall()
+
+    students = []
+    for row in rows:
+        voter_id = row["voter_id"].upper()
+        students.append({
+            "usn": voter_id,
+            "branch": "CB",
+            "className": "CSBS",
+            "batch": "2024" if voter_id.startswith("1KG24") else "2023",
+            "number": 60 if voter_id == "1KG24CB400" else int(voter_id[-3:]),
+            "role": row["role"],
+            "studentName": row["student_name"],
+            "idVerified": bool(row["id_verified"]),
+            "verifiedBy": row["verified_by"],
+            "verifiedAt": row["verified_at"],
+        })
+    return {"students": students, "total": len(students)}
+
+
+@app.patch("/api/v1/admin/voters/{voter_id}/verify")
+@limiter.limit("30/minute")
+async def verify_voter_eligibility(
+    request: Request,
+    voter_id: str,
+    payload: EligibilityVerificationRequest,
+    admin: dict = Depends(require_admin),
+):
+    """Record an admin's physical ID-card eligibility check in SQLite."""
+    normalized_id = voter_id.strip().lower()
+    with get_db() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE voters
+            SET id_verified = ?, verified_by = ?, verified_at = ?
+            WHERE voter_id = ? AND (voter_id LIKE '1kg23cb%' OR voter_id = '1kg24cb400')
+            """,
+            (int(payload.verified), admin["voter_id"], datetime.now(timezone.utc).isoformat(), normalized_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="CSBS voter not found.")
+        conn.commit()
+    return {"voter_id": normalized_id.upper(), "id_verified": payload.verified}
+
+
+@app.get("/api/v1/voter/eligibility")
+@limiter.limit("30/minute")
+async def voter_eligibility(request: Request):
+    """Return the logged-in voter's eligibility details from SQLite."""
+    token = request.cookies.get(_COOKIE_NAME)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+    session = decode_jwt(token)
+    voter_id = session.get("voter_id", "").strip().lower()
+    with get_db() as conn:
+        row = conn.execute(
+            """SELECT voter_id, student_name, branch, class_name, batch, id_verified
+               FROM voters WHERE voter_id = ?""",
+            (voter_id,),
+        ).fetchone()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Voter is not registered.")
+    return {
+        "voter_id": row["voter_id"].upper(),
+        "student_name": row["student_name"],
+        "branch": row["branch"],
+        "class_name": row["class_name"],
+        "batch": row["batch"],
+        "eligible": bool(row["id_verified"]),
+    }
 
 
 @app.post("/api/v1/enroll-face", status_code=status.HTTP_201_CREATED)
