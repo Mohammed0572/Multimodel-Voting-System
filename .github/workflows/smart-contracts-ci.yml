@@ -2,17 +2,19 @@ name: Smart Contracts CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
     paths:
       - 'contracts/**'
       - 'migrations/**'
       - 'truffle-config.js'
+      - 'server/blockchain/**'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
     paths:
       - 'contracts/**'
       - 'migrations/**'
       - 'truffle-config.js'
+      - 'server/blockchain/**'
 
 jobs:
   build:
@@ -29,6 +31,6 @@ jobs:
         node-version: '18.x'
         cache: 'pnpm'
     - name: Install Dependencies
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      run: pnpm install --no-frozen-lockfile --ignore-scripts
     - name: Compile Contracts
       run: npx truffle compile

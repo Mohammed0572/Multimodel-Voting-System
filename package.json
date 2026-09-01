@@ -5,6 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "dev": "vite",
+    "compile:contracts": "truffle compile",
+    "prebuild": "truffle compile",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
