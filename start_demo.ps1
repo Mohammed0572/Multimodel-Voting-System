@@ -36,7 +36,7 @@ Pop-Location
 
 # Start Backend
 Write-Host "Starting Python FastAPI backend..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd server/face-recognition ; if (Test-Path '.\.venv\Scripts\Activate.ps1') { .\.venv\Scripts\Activate.ps1 } ; python -m uvicorn main:app --host 127.0.0.1 --port 8000 --workers 4"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd server/face-recognition ; if (Test-Path '.\.venv\Scripts\Activate.ps1') { .\.venv\Scripts\Activate.ps1 } ; python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload"
 
 # Start Frontend
 Write-Host "Starting React frontend..." -ForegroundColor Green

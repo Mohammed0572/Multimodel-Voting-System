@@ -550,7 +550,7 @@ async def auth_refresh(request: Request, response: Response):
         value=new_token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="strict",
+        samesite="lax",
         max_age=JWT_EXPIRY_HOURS * 3600,
     )
 
@@ -601,7 +601,7 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
         value=token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="strict",
+        samesite="lax",
         max_age=JWT_EXPIRY_HOURS * 3600,
     )
 
@@ -734,7 +734,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         value=token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
-        samesite="strict",
+        samesite="lax",
         max_age=_COOKIE_MAX_AGE,
         path="/",
     )
@@ -771,7 +771,7 @@ async def auth_logout(request: Request):
     Clears the auth cookie, effectively logging the user out.
     """
     response = JSONResponse(content={"message": "Logged out successfully."})
-    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="strict")
+    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="lax")
     log.info("[AUTH] Logout — cookie cleared for %s", request.client.host if request.client else "unknown")
     return response
 

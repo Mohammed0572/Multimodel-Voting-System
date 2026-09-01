@@ -84,9 +84,11 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         // Read existing permissions silently. A wallet popup should only appear
         // when a protected flow explicitly calls connectWallet().
         const currentWeb3 = new Web3(window.ethereum as any);
-        const expectedChainId = Number(import.meta.env.VITE_NETWORK_ID || 11155111);
+        const expectedChainId = Number(import.meta.env.VITE_NETWORK_ID || 1337);
         const chainId = await currentWeb3.eth.getChainId();
-        const isGanache = expectedChainId === 5777 && Number(chainId) === 1337;
+        const isGanache =
+          (expectedChainId === 5777 || expectedChainId === 1337) &&
+          (Number(chainId) === 1337 || Number(chainId) === 5777);
         if (Number(chainId) !== expectedChainId && !isGanache) {
           throw new Error(
             `Wrong blockchain network. Expected chain ID ${expectedChainId}, received ${chainId}.`
