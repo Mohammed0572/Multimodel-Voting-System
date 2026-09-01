@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # ── Redis ─────────────────────────────────────────────────
     REDIS_URL: str = "redis://127.0.0.1:6379/0"
+    FACE_DB_PATH: str = ""
     FRONTEND_ORIGINS: str = (
         "http://localhost:8080,http://127.0.0.1:8080,"
         "http://localhost:5173,http://127.0.0.1:5173"

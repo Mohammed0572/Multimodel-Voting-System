@@ -43,13 +43,18 @@ services:
       - "8000:8000"
     environment:
       - SECRET_KEY=${SECRET_KEY}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin_user}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_EXPIRY_HOURS=${JWT_EXPIRY_HOURS:-2}
       - MATCH_TOLERANCE=${MATCH_TOLERANCE:-0.5}
       - REDIS_URL=redis://redis:6379/0   # service name, not localhost
-      - FRONTEND_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+      - FRONTEND_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173
+      - FACE_DB_PATH=/app/data/face_voter_db.sqlite
       - COOKIE_SECURE=false
       - EAR_MIN_CLOSED=${EAR_MIN_CLOSED:-0.22}
       - EAR_MIN_OPEN=${EAR_MIN_OPEN:-0.25}
+    volumes:
+      - face_auth_data:/app/data
     depends_on:
       redis:
         condition: service_healthy
@@ -71,4 +76,6 @@ services:
 
 volumes:
   redis_data:
+    driver: local
+  face_auth_data:
     driver: local

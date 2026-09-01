@@ -1,1 +1,37 @@
-.venv
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Local environment and generated data
+.env
+.env.*
+*.pkl
+*.pickle
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE and OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build output
+build/
+dist/
+
+# Face recognition artifacts
+enrollment_images/*
+!enrollment_images/.gitkeep
+
+# Local scratch / research folder that should not be pushed
+Face_Recognition_New/

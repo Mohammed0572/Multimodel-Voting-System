@@ -1,16 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
-import Web3 from 'web3';
-import { useWeb3 } from '../context/Web3Context';
-import { Link } from 'react-router-dom';
-import { Chakra } from '../components/Chakra';
+import { useState, useEffect, useCallback } from "react";
+import Web3 from "web3";
+import { useWeb3 } from "../context/Web3Context";
+import { Link } from "react-router-dom";
+import { Chakra } from "../components/Chakra";
 import {
   CheckCircle2,
   MapPin,
   ShieldCheck,
   LogOut,
   ArrowRight,
-} from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+  User,
+  IdCard,
+  CalendarDays,
+  BadgeCheck,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 interface Candidate {
   id: number;
@@ -40,25 +44,29 @@ const hashVoterId = (voterId: string) => {
   const encodedVoterId = new TextEncoder().encode(voterId.trim().toUpperCase());
   // Web3 v1 types only declare string/BN, although the runtime accepts Uint8Array.
   const hash = Web3.utils.sha3(encodedVoterId as unknown as string);
-  if (!hash) throw new Error('Unable to hash voter ID.');
+  if (!hash) throw new Error("Unable to hash voter ID.");
   return hash;
 };
 
 const Voting = () => {
   const { account, contract, isLoading, error, connectWallet } = useWeb3();
   const { session, logout } = useAuth();
-  
+
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [electionState, setElectionState] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
-  const [eligibility, setEligibility] = useState<Eligibility | null>(null);
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState(true);
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
-  
-  const [stage, setStage] = useState<"choose" | "review" | "sealing" | "sealed">("choose");
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
+    null,
+  );
+
+  const [stage, setStage] = useState<
+    "choose" | "review" | "sealing" | "sealed"
+  >("choose");
   const [txHash, setTxHash] = useState<string>("");
-  const [receiptCandidate, setReceiptCandidate] = useState<Candidate | null>(null);
-  
+  const [receiptCandidate, setReceiptCandidate] = useState<Candidate | null>(
+    null,
+  );
+
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
@@ -92,7 +100,7 @@ const Voting = () => {
           party: data[2],
           voteCount: data[3].toNumber(),
           color: COLORS[(i - 1) % COLORS.length],
-          symbol: SYMBOLS[(i - 1) % SYMBOLS.length]
+          symbol: SYMBOLS[(i - 1) % SYMBOLS.length],
         });
       }
       setCandidates(candidatesArray);
@@ -130,18 +138,24 @@ const Voting = () => {
 
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
-      alert('Your authenticated voter identity is missing. Please sign in again.');
+      alert(
+        "Your authenticated voter identity is missing. Please sign in again.",
+      );
       return;
     }
 
-    const from = account || await connectWallet();
+    const from = account || (await connectWallet());
     if (!from) return;
 
     setStage("sealing");
 
     try {
-      const tx = await contract.vote(selectedCandidateId, hashVoterId(voterId), { from });
-      const submittedHash = tx?.tx || tx?.receipt?.transactionHash || '';
+      const tx = await contract.vote(
+        selectedCandidateId,
+        hashVoterId(voterId),
+        { from },
+      );
+      const submittedHash = tx?.tx || tx?.receipt?.transactionHash || "";
       setTxHash(submittedHash);
       setReceiptCandidate(chosen || null);
       setHasVoted(true);
@@ -149,7 +163,9 @@ const Voting = () => {
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
-      alert('The ballot was not recorded. Check the wallet transaction and try again.');
+      alert(
+        "The ballot was not recorded. Check the wallet transaction and try again.",
+      );
       setStage("review");
     }
   };
@@ -158,7 +174,9 @@ const Voting = () => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-paper py-20 text-ink">
         <Chakra size={80} className="text-saffron mb-4" spin />
-        <p className="font-medium text-muted-foreground">Connecting to Blockchain...</p>
+        <p className="font-medium text-muted-foreground">
+          Connecting to Blockchain...
+        </p>
       </div>
     );
   }
@@ -166,14 +184,38 @@ const Voting = () => {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-paper py-20 text-ink px-6 text-center">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Blockchain Connection Failed</h2>
+        <h2 className="text-2xl font-bold text-red-600 mb-4">
+          Blockchain Connection Failed
+        </h2>
         <p className="text-muted-foreground mb-4 max-w-md">{error}</p>
-        <p className="text-sm">Please ensure MetaMask is connected, unlock the account, and refresh the page.</p>
+        <p className="text-sm">
+          Please ensure MetaMask is connected, unlock the account, and refresh
+          the page.
+        </p>
       </div>
     );
   }
 
   const chosen = displayCandidates.find((c) => c.id === selectedCandidateId);
+  const profileFields = [
+    { label: "Name", value: session?.name || "Not available", icon: User },
+    { label: "USN", value: session?.usn || "Not available", icon: IdCard },
+    {
+      label: "Branch",
+      value: session?.branch || "Not available",
+      icon: MapPin,
+    },
+    {
+      label: "DOB",
+      value: session?.dob || "Not available",
+      icon: CalendarDays,
+    },
+    {
+      label: "Validity",
+      value: session?.validity || "Not available",
+      icon: BadgeCheck,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-paper-warm text-ink">
@@ -190,15 +232,18 @@ const Voting = () => {
           </Link>
           <div className="flex items-center gap-6 text-sm">
             <div className="hidden text-right md:block">
-              <div className="font-medium text-ink">Voter · {session?.voter_id || 'Unknown'}</div>
+              <div className="font-medium text-ink">
+                Voter · {session?.voter_id || "Unknown"}
+              </div>
               <div className="text-xs text-muted-foreground">
-                Account {account?.substring(0, 6)}...{account?.substring(account.length - 4)}
+                Account {account?.substring(0, 6)}...
+                {account?.substring(account.length - 4)}
               </div>
             </div>
-            <button 
+            <button
               onClick={() => {
                 logout().then(() => {
-                  window.location.href = '/';
+                  window.location.href = "/";
                 });
               }}
               className="inline-flex items-center gap-2 rounded-md border border-hairline px-3 py-2 text-sm hover:border-ink"
@@ -218,7 +263,11 @@ const Voting = () => {
                 Election Status
               </div>
               <h1 className="mt-2 font-display text-3xl font-semibold md:text-4xl">
-                {electionState === 1 ? 'Lok Sabha 2026 · Phase 3' : electionState === 2 ? 'Election Ended' : 'Election Not Started'}
+                {electionState === 1
+                  ? "Lok Sabha 2026 · Phase 3"
+                  : electionState === 2
+                    ? "Election Ended"
+                    : "Election Not Started"}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -239,9 +288,15 @@ const Voting = () => {
                 Wallet
               </div>
               {account ? (
-                <div className="font-mono text-sm font-semibold text-india-green mt-1">Connected</div>
+                <div className="font-mono text-sm font-semibold text-india-green mt-1">
+                  Connected
+                </div>
               ) : (
-                <button type="button" onClick={() => void connectWallet()} className="mt-1 font-mono text-sm font-semibold text-saffron hover:underline">
+                <button
+                  type="button"
+                  onClick={() => void connectWallet()}
+                  className="mt-1 font-mono text-sm font-semibold text-saffron hover:underline"
+                >
                   Connect wallet
                 </button>
               )}
@@ -249,14 +304,44 @@ const Voting = () => {
           </div>
         </section>
 
+        <section className="mt-10 rounded-md border border-hairline bg-paper p-6 md:p-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                Registered voter
+              </div>
+              <h2 className="mt-2 font-display text-2xl font-semibold">
+                Voter profile
+              </h2>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {profileFields.map(({ label, value, icon: Icon }) => (
+              <div
+                key={label}
+                className="rounded-md border border-hairline bg-paper-warm p-4"
+              >
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <Icon className="size-4 text-saffron" />
+                  {label}
+                </div>
+                <div className="mt-3 text-base font-semibold text-ink">
+                  {value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {stage === "sealed" ? (
-            <Receipt
-              candidate={receiptCandidate}
-              txHash={txHash}
-              onReset={() => {
-                if (!hasVoted) setStage("choose");
-              }}
-            />
+          <Receipt
+            candidate={receiptCandidate}
+            txHash={txHash}
+            onReset={() => {
+              if (!hasVoted) setStage("choose");
+            }}
+          />
         ) : (
           <>
             {isCheckingEligibility ? (
@@ -287,13 +372,15 @@ const Voting = () => {
               </div>
 
               {electionState !== 1 ? (
-                 <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
-                   {electionState === 0 ? "The election has not started yet." : "The election has ended."}
-                 </div>
+                <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
+                  {electionState === 0
+                    ? "The election has not started yet."
+                    : "The election has ended."}
+                </div>
               ) : displayCandidates.length === 0 ? (
-                 <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
-                   No candidates are currently registered.
-                 </div>
+                <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
+                  No candidates are currently registered.
+                </div>
               ) : (
                 <fieldset className="mt-6 grid gap-3">
                   <legend className="sr-only">List of candidates</legend>
@@ -348,13 +435,38 @@ const Voting = () => {
             </section>
 
             {stage === "review" && chosen && (
-              <section className="mt-8 rounded-md border border-saffron/40 bg-saffron/5 p-6" aria-labelledby="review-heading">
-                <div className="text-xs uppercase tracking-[0.2em] text-saffron">Final review</div>
-                <h3 id="review-heading" className="mt-2 font-display text-2xl font-semibold">Confirm your selection</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Your choice will be submitted to the blockchain after you confirm the wallet transaction. This action cannot be undone.</p>
+              <section
+                className="mt-8 rounded-md border border-saffron/40 bg-saffron/5 p-6"
+                aria-labelledby="review-heading"
+              >
+                <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                  Final review
+                </div>
+                <h3
+                  id="review-heading"
+                  className="mt-2 font-display text-2xl font-semibold"
+                >
+                  Confirm your selection
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Your choice will be submitted to the blockchain after you
+                  confirm the wallet transaction. This action cannot be undone.
+                </p>
                 <div className="mt-5 flex flex-wrap gap-3">
-                  <button type="button" onClick={() => setStage("choose")} className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink">Change selection</button>
-                  <button type="button" onClick={handleVote} className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90">Confirm and seal <ArrowRight className="size-4" /></button>
+                  <button
+                    type="button"
+                    onClick={() => setStage("choose")}
+                    className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink"
+                  >
+                    Change selection
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleVote}
+                    className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90"
+                  >
+                    Confirm and seal <ArrowRight className="size-4" />
+                  </button>
                 </div>
               </section>
             )}
@@ -365,10 +477,14 @@ const Voting = () => {
                 <div className="text-sm">
                   {chosen ? (
                     <span>
-                      Selected:{" "}<span className="font-semibold">{chosen.name}</span> · {chosen.party}
+                      Selected:{" "}
+                      <span className="font-semibold">{chosen.name}</span> ·{" "}
+                      {chosen.party}
                     </span>
                   ) : (
-                    <span className="text-paper/60">Select a candidate to continue</span>
+                    <span className="text-paper/60">
+                      Select a candidate to continue
+                    </span>
                   )}
                 </div>
                 <button
@@ -452,9 +568,11 @@ function Receipt({
         </div>
         <dl className="space-y-3 rounded-md bg-paper-warm p-6 font-mono text-xs">
           <Row k="Constituency" v="Local / Dev Network" />
-          <Row k="Tx hash" v={txHash || 'Pending confirmation'} />
+          <Row k="Tx hash" v={txHash || "Pending confirmation"} />
           <Row k="Timestamp" v={new Date().toLocaleString("en-IN")} />
-          {candidate && <Row k="Selection" v={`${candidate.name} · ${candidate.party}`} />}
+          {candidate && (
+            <Row k="Selection" v={`${candidate.name} · ${candidate.party}`} />
+          )}
           <Row k="Chain" v="Configured network" />
         </dl>
       </div>

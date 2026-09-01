@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import VoterLogin from './pages/VoterLogin';
+import Registration from './pages/Registration';
 import AdminLogin from './pages/AdminLogin';
 import Admin from './pages/Admin';
 import Voting from './pages/Voting';
@@ -25,6 +26,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<VoterLogin />} />
+              <Route path="/register" element={<Registration />} />
             <Route element={<ProtectedRoute allowedRole="user" />}>
               <Route path="/voting" element={<Voting />} />
             </Route>

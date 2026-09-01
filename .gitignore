@@ -1,8 +1,11 @@
 # ── Dependencies ─────────────────────────────────
 node_modules/
+.pnpm-store/
 
 # ── Environment Variables (secrets) ──────────────
 .env
+.env.*
+!.env.example
 .env.sepolia
 .env.local
 .env.production
@@ -11,22 +14,44 @@ node_modules/
 build/
 dist/
 src/dist/
+coverage/
 
 # ── Python ───────────────────────────────────────
 __pycache__/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .venv/
-*.pyc
+venv/
+ENV/
+env/
+*.py[cod]
 *.pyo
+*.pyd
 *.egg-info/
 *.sqlite
+*.sqlite3
+*.db
 
 # ── Face Recognition (binary data) ───────────────
 encodings.pkl
+*.pkl
+*.pickle
+server/face-recognition/*.pkl
+server/face-recognition/*.pickle
+server/face-recognition/*.sqlite
+server/face-recognition/*.sqlite3
+server/face-recognition/*.db
+server/face-recognition/enrollment_images/*
+!server/face-recognition/enrollment_images/.gitkeep
+Face_Recognition_New/
 
 # ── Logs ─────────────────────────────────────────
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # ── OS Files ─────────────────────────────────────
 .DS_Store
@@ -35,6 +60,7 @@ Desktop.ini
 
 # ── IDE / Editor ─────────────────────────────────
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
@@ -42,6 +68,7 @@ Desktop.ini
 # ── AI Assistant Config ──────────────────────────
 .claude/
 .gemini/
+.codex/
 
 # ── Contract Artifacts ───────────────────────────
 src/contracts/
