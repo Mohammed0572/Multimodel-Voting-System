@@ -21,7 +21,7 @@ jobs:
         node-version: '20.x'
         cache: 'pnpm'
     - name: Install Dependencies
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      run: pnpm install --no-frozen-lockfile --ignore-scripts
     - name: Compile Smart Contracts
       run: npx truffle compile
     - name: Build Frontend

@@ -31,6 +31,6 @@ jobs:
         node-version: '18.x'
         cache: 'pnpm'
     - name: Install Dependencies
-      run: pnpm install --frozen-lockfile --ignore-scripts
+      run: pnpm install --no-frozen-lockfile --ignore-scripts
     - name: Compile Contracts
       run: npx truffle compile
