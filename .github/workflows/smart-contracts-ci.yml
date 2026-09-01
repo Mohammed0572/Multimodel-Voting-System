@@ -2,17 +2,19 @@ name: Smart Contracts CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
     paths:
       - 'contracts/**'
       - 'migrations/**'
       - 'truffle-config.js'
+      - 'server/blockchain/**'
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
     paths:
       - 'contracts/**'
       - 'migrations/**'
       - 'truffle-config.js'
+      - 'server/blockchain/**'
 
 jobs:
   build:
