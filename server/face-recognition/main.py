@@ -663,62 +663,88 @@ async def auth_refresh(request: Request, response: Response):
 
     new_token = create_jwt(voter_id, role)
 
-    response.set_cookie(
-        key="auth_token",
+    res = JSONResponse(
+        content={
+            "role": role,
+            "voter_id": voter_id,
+            "name": row["name"] if row else None,
+            "usn": row["usn"] if row else None,
+            "branch": row["branch"] if row else None,
+            "validity": row["validity"] if row else None,
+            "dob": row["dob"] if row else None,
+            "message": "Token refreshed",
+        },
+        status_code=status.HTTP_200_OK,
+    )
+    res.set_cookie(
+        key=_COOKIE_NAME,
         value=new_token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax",
-        max_age=JWT_EXPIRY_HOURS * 3600,
+        max_age=_COOKIE_MAX_AGE,
+        path="/",
     )
 
     log.info("[REFRESH] Token renewed for %s (role=%s)", voter_id, role)
-    return {
-        "role": role,
-        "voter_id": voter_id,
-        "name": row["name"] if row else None,
-        "usn": row["usn"] if row else None,
-        "branch": row["branch"] if row else None,
-        "validity": row["validity"] if row else None,
-        "dob": row["dob"] if row else None,
-        "message": "Token refreshed",
-    }
+    return res
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════
 
+ocr_reader = None
+
+
+def get_ocr_reader():
+    global ocr_reader
+    if ocr_reader is None:
+        try:
+            import easyocr  # type: ignore[import-untyped,import-not-found]
+            ocr_reader = easyocr.Reader(["en"], gpu=False)
+        except Exception as exc:
+            log.warning("EasyOCR could not be initialized: %s", exc)
+            ocr_reader = None
+    return ocr_reader
+
+
 @app.post("/api/v1/extract-id")
 @limiter.limit("10/minute")
 async def extract_id(request: Request, body: ExtractIDRequest):
     """Extracts Name, USN, Branch, Validity, and DOB from an ID card image."""
-    if ocr_reader is None:
-        raise HTTPException(status_code=500, detail="OCR not initialized.")
+    reader = get_ocr_reader()
+    if reader is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OCR service is unavailable (easyocr is not installed or initialized).",
+        )
 
     img = decode_base64_image(body.image_base64)
     # easyocr reads BGR/RGB directly
-    results = ocr_reader.readtext(img, detail=0)
+    results = reader.readtext(img, detail=0)
 
     details = {
         "name": "",
         "usn": "",
         "branch": "",
         "validity": "",
-        "dob": ""
+        "dob": "",
     }
 
-    usn_pattern = re.compile(r'\d[A-Z]{2}\d{2}[A-Z]{2}\d{3}', re.IGNORECASE)
-    dob_pattern = re.compile(r'\d{2}[/-]\d{2}[/-]\d{4}')
+    usn_pattern = re.compile(r"\d[A-Z]{2}\d{2}[A-Z]{2}\d{3}", re.IGNORECASE)
+    dob_pattern = re.compile(r"\d{2}[/-]\d{2}[/-]\d{4}")
 
     for i, text in enumerate(results):
         text = text.strip()
 
-        if usn_pattern.search(text) and not details["usn"]:
-            details["usn"] = usn_pattern.search(text).group().upper()
+        usn_match = usn_pattern.search(text)
+        if usn_match and not details["usn"]:
+            details["usn"] = usn_match.group().upper()
 
-        elif dob_pattern.search(text) and not details["dob"]:
-            details["dob"] = dob_pattern.search(text).group()
+        dob_match = dob_pattern.search(text)
+        if dob_match and not details["dob"]:
+            details["dob"] = dob_match.group()
 
         elif "validity" in text.lower() or "valid till" in text.lower() or "expiry" in text.lower():
             if i + 1 < len(results):
@@ -761,17 +787,22 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
     # Valid credentials -> issue token in cookie
     token = create_jwt(body.username, "admin")
 
-    response.set_cookie(
-        key="auth_token",
+    res = JSONResponse(
+        content={"role": "admin", "voter_id": body.username},
+        status_code=status.HTTP_200_OK,
+    )
+    res.set_cookie(
+        key=_COOKIE_NAME,
         value=token,
         httponly=True,
         secure=settings.COOKIE_SECURE,
         samesite="lax",
-        max_age=JWT_EXPIRY_HOURS * 3600,
+        max_age=_COOKIE_MAX_AGE,
+        path="/",
     )
 
     log.info("Admin '%s' logged in successfully via password", body.username)
-    return {"role": "admin", "voter_id": body.username}
+    return res
 
 
 @app.post("/api/v1/verify-face", response_model=AuthResponse)

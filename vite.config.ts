@@ -19,5 +19,14 @@ export default defineConfig({
   },
   server: {
     port: 8080,
+    watch: {
+      ignored: [
+        '**/server/**',
+        '**/*.sqlite*',
+        '**/*.sqlite-wal',
+        '**/*.sqlite-shm',
+        '**/*.pkl*',
+      ],
+    },
   },
 })
