@@ -66,6 +66,8 @@ const Voting = () => {
   const [receiptCandidate, setReceiptCandidate] = useState<Candidate | null>(
     null,
   );
+  const [eligibility, setEligibility] = useState<Eligibility | null>(null);
+  const [isCheckingEligibility, setIsCheckingEligibility] = useState<boolean>(true);
 
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
@@ -354,150 +356,151 @@ const Voting = () => {
                 {eligibility && <div className="mt-5 grid gap-2 rounded-md border border-hairline bg-paper p-4 text-sm sm:grid-cols-2"><span><strong>USN:</strong> {eligibility.voter_id}</span><span><strong>Name:</strong> {eligibility.student_name || 'Not available'}</span><span><strong>Class:</strong> {eligibility.class_name || 'Not registered'}</span><span><strong>Branch:</strong> {eligibility.branch || 'Not registered'}</span></div>}
               </section>
             ) : (
-          <>
-            {/* Cast */}
-            <section className="mt-10">
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.2em] text-saffron">
-                    Cast your vote
-                  </div>
-                  <h2 className="mt-2 font-display text-2xl font-semibold">
-                    Choose one candidate
-                  </h2>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {displayCandidates.length} candidates
-                </div>
-              </div>
-
-              {electionState !== 1 ? (
-                <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
-                  {electionState === 0
-                    ? "The election has not started yet."
-                    : "The election has ended."}
-                </div>
-              ) : displayCandidates.length === 0 ? (
-                <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
-                  No candidates are currently registered.
-                </div>
-              ) : (
-                <fieldset className="mt-6 grid gap-3">
-                  <legend className="sr-only">List of candidates</legend>
-                  {displayCandidates.map((c) => {
-                    const active = selectedCandidateId === c.id;
-                    return (
-                      <div key={c.id}>
-                        <button
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => setSelectedCandidateId(c.id)}
-                          className={`flex w-full items-center gap-5 rounded-md border p-5 text-left transition ${
-                            active
-                              ? "border-saffron bg-saffron/5 shadow-[0_8px_24px_-16px_rgba(255,103,31,0.5)]"
-                              : "border-hairline bg-paper hover:border-ink/30"
-                          }`}
-                        >
-                          <span
-                            className="flex size-14 items-center justify-center rounded-md text-2xl"
-                            style={{
-                              backgroundColor: `${c.color}15`,
-                              color: c.color,
-                            }}
-                          >
-                            {c.symbol}
-                          </span>
-                          <div className="flex-1">
-                            <div className="font-display text-lg font-semibold">
-                              {c.name}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {c.party}
-                            </div>
-                          </div>
-                          <span
-                            className={`flex size-6 items-center justify-center rounded-full border-2 ${
-                              active
-                                ? "border-saffron bg-saffron"
-                                : "border-hairline"
-                            }`}
-                          >
-                            {active && (
-                              <span className="size-2 rounded-full bg-paper" />
-                            )}
-                          </span>
-                        </button>
+              <>
+                {/* Cast */}
+                <section className="mt-10">
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                        Cast your vote
                       </div>
-                    );
-                  })}
-                </fieldset>
-              )}
-            </section>
+                      <h2 className="mt-2 font-display text-2xl font-semibold">
+                        Choose one candidate
+                      </h2>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {displayCandidates.length} candidates
+                    </div>
+                  </div>
 
-            {stage === "review" && chosen && (
-              <section
-                className="mt-8 rounded-md border border-saffron/40 bg-saffron/5 p-6"
-                aria-labelledby="review-heading"
-              >
-                <div className="text-xs uppercase tracking-[0.2em] text-saffron">
-                  Final review
-                </div>
-                <h3
-                  id="review-heading"
-                  className="mt-2 font-display text-2xl font-semibold"
-                >
-                  Confirm your selection
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Your choice will be submitted to the blockchain after you
-                  confirm the wallet transaction. This action cannot be undone.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setStage("choose")}
-                    className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink"
-                  >
-                    Change selection
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleVote}
-                    className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90"
-                  >
-                    Confirm and seal <ArrowRight className="size-4" />
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {/* Sticky review bar */}
-            {electionState === 1 && stage === "choose" && (
-              <div className="sticky bottom-6 mt-10 flex items-center justify-between rounded-md border border-hairline bg-ink px-6 py-4 text-paper shadow-[0_20px_50px_-20px_rgba(11,31,58,0.5)]">
-                <div className="text-sm">
-                  {chosen ? (
-                    <span>
-                      Selected:{" "}
-                      <span className="font-semibold">{chosen.name}</span> ·{" "}
-                      {chosen.party}
-                    </span>
+                  {electionState !== 1 ? (
+                    <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
+                      {electionState === 0
+                        ? "The election has not started yet."
+                        : "The election has ended."}
+                    </div>
+                  ) : displayCandidates.length === 0 ? (
+                    <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
+                      No candidates are currently registered.
+                    </div>
                   ) : (
-                    <span className="text-paper/60">
-                      Select a candidate to continue
-                    </span>
+                    <fieldset className="mt-6 grid gap-3">
+                      <legend className="sr-only">List of candidates</legend>
+                      {displayCandidates.map((c) => {
+                        const active = selectedCandidateId === c.id;
+                        return (
+                          <div key={c.id}>
+                            <button
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => setSelectedCandidateId(c.id)}
+                              className={`flex w-full items-center gap-5 rounded-md border p-5 text-left transition ${
+                                active
+                                  ? "border-saffron bg-saffron/5 shadow-[0_8px_24px_-16px_rgba(255,103,31,0.5)]"
+                                  : "border-hairline bg-paper hover:border-ink/30"
+                              }`}
+                            >
+                              <span
+                                className="flex size-14 items-center justify-center rounded-md text-2xl"
+                                style={{
+                                  backgroundColor: `${c.color}15`,
+                                  color: c.color,
+                                }}
+                              >
+                                {c.symbol}
+                              </span>
+                              <div className="flex-1">
+                                <div className="font-display text-lg font-semibold">
+                                  {c.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {c.party}
+                                </div>
+                              </div>
+                              <span
+                                className={`flex size-6 items-center justify-center rounded-full border-2 ${
+                                  active
+                                    ? "border-saffron bg-saffron"
+                                    : "border-hairline"
+                                }`}
+                              >
+                                {active && (
+                                  <span className="size-2 rounded-full bg-paper" />
+                                )}
+                              </span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </fieldset>
                   )}
-                </div>
-                <button
-                  disabled={!chosen || hasVoted}
-                  onClick={handleReview}
-                  className="inline-flex items-center gap-2 rounded-md bg-saffron px-5 py-2.5 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:bg-paper/20"
-                >
-                  Review & confirm <ArrowRight className="size-4" />
-                </button>
-              </div>
+                </section>
+
+                {stage === "review" && chosen && (
+                  <section
+                    className="mt-8 rounded-md border border-saffron/40 bg-saffron/5 p-6"
+                    aria-labelledby="review-heading"
+                  >
+                    <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                      Final review
+                    </div>
+                    <h3
+                      id="review-heading"
+                      className="mt-2 font-display text-2xl font-semibold"
+                    >
+                      Confirm your selection
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Your choice will be submitted to the blockchain after you
+                      confirm the wallet transaction. This action cannot be undone.
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setStage("choose")}
+                        className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink"
+                      >
+                        Change selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleVote}
+                        className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90"
+                      >
+                        Confirm and seal <ArrowRight className="size-4" />
+                      </button>
+                    </div>
+                  </section>
+                )}
+
+                {/* Sticky review bar */}
+                {electionState === 1 && stage === "choose" && (
+                  <div className="sticky bottom-6 mt-10 flex items-center justify-between rounded-md border border-hairline bg-ink px-6 py-4 text-paper shadow-[0_20px_50px_-20px_rgba(11,31,58,0.5)]">
+                    <div className="text-sm">
+                      {chosen ? (
+                        <span>
+                          Selected:{" "}
+                          <span className="font-semibold">{chosen.name}</span> ·{" "}
+                          {chosen.party}
+                        </span>
+                      ) : (
+                        <span className="text-paper/60">
+                          Select a candidate to continue
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      disabled={!chosen || hasVoted}
+                      onClick={handleReview}
+                      className="inline-flex items-center gap-2 rounded-md bg-saffron px-5 py-2.5 text-sm font-semibold text-paper disabled:cursor-not-allowed disabled:bg-paper/20"
+                    >
+                      Review & confirm <ArrowRight className="size-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </>
-            )}
         )}
 
         {stage === "sealing" && (

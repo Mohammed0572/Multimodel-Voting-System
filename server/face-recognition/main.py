@@ -124,6 +124,7 @@ limiter = _build_limiter()
 # ═══════════════════════════════════════════════════════════════════════════
 
 DB_PATH = settings.FACE_DB_PATH or str(Path(__file__).resolve().with_name("face_voter_db.sqlite"))
+CSBS_SEED_PATH = str(Path(__file__).resolve().with_name("csbs_students.json"))
 
 
 @contextmanager
