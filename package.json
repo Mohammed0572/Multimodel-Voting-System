@@ -5,6 +5,7 @@
   "main": "index.ts",
   "scripts": {
     "dev": "vite",
+    "demo": "node scripts/start-demo.mjs",
     "compile:contracts": "truffle compile",
     "prebuild": "truffle compile",
     "build": "tsc && vite build",
