@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 contract Voting {
-    address public owner;
+    address public immutable owner;
 
     struct Candidate {
         uint id;
@@ -12,9 +12,9 @@ contract Voting {
     }
 
     mapping (uint => Candidate) public candidates;
-    // One ballot per authenticated voter ID, not per MetaMask account. This allows
-    // local/demo environments to use one administrator wallet for multiple voters.
-    mapping (bytes32 => bool) public voters;
+    // Opaque voting credentials are issued off-chain after authentication.
+    // No voter ID or voter-ID hash is written to this contract.
+    mapping (bytes32 => bool) public credentialUsed;
 
     enum ElectionState {
         NotStarted,
@@ -41,22 +41,22 @@ contract Voting {
                return countCandidates;
     }
    
-    function vote(uint candidateID, bytes32 voterIdHash) public {
+    function vote(uint candidateID, bytes32 credential) public {
 
        require(state == ElectionState.Active, "Election is not active.");
    
        require(candidateID > 0 && candidateID <= countCandidates, "Invalid candidate.");
 
-       require(voterIdHash != bytes32(0), "Invalid voter ID.");
-       require(!voters[voterIdHash], "Voter has already voted.");
+       require(credential != bytes32(0), "Invalid voting credential.");
+       require(!credentialUsed[credential], "Voting credential has already been used.");
               
-       voters[voterIdHash] = true;
+       credentialUsed[credential] = true;
        
        candidates[candidateID].voteCount ++;
     }
     
-    function checkVote(bytes32 voterIdHash) public view returns(bool){
-        return voters[voterIdHash];
+    function checkCredential(bytes32 credential) public view returns(bool){
+        return credentialUsed[credential];
     }
        
     function getCountCandidates() public view returns(uint) {

@@ -37,14 +37,14 @@ contract("Voting", (accounts) => {
     await newVotingInstance.addCandidate("Bob", "Party B");
     await newVotingInstance.startElection();
 
-    const voterIdHash = web3.utils.keccak256("VTR-BOB");
-    await newVotingInstance.vote(1, voterIdHash, { from: accounts[1] });
+    const credential = web3.utils.keccak256("opaque-random-credential-bob");
+    await newVotingInstance.vote(1, credential, { from: accounts[1] });
     
     const candidate = await newVotingInstance.getCandidate(1);
     assert.equal(candidate[3].toNumber(), 1, "Vote count should be 1");
 
-    const hasVoted = await newVotingInstance.checkVote(voterIdHash);
-    assert.equal(hasVoted, true, "User should be marked as having voted");
+    const isConsumed = await newVotingInstance.checkCredential(credential);
+    assert.equal(isConsumed, true, "Credential should be marked as consumed");
   });
 
   it("should allow different voter IDs to vote from the same wallet", async () => {
@@ -54,18 +54,18 @@ contract("Voting", (accounts) => {
     await newVotingInstance.startElection();
 
     const sharedWallet = accounts[2];
-    const firstVoterIdHash = web3.utils.keccak256("VTR-001");
-    const secondVoterIdHash = web3.utils.keccak256("VTR-002");
+    const firstCredential = web3.utils.keccak256("opaque-random-credential-001");
+    const secondCredential = web3.utils.keccak256("opaque-random-credential-002");
 
-    await newVotingInstance.vote(1, firstVoterIdHash, { from: sharedWallet });
-    await newVotingInstance.vote(2, secondVoterIdHash, { from: sharedWallet });
+    await newVotingInstance.vote(1, firstCredential, { from: sharedWallet });
+    await newVotingInstance.vote(2, secondCredential, { from: sharedWallet });
 
     const firstCandidate = await newVotingInstance.getCandidate(1);
     const secondCandidate = await newVotingInstance.getCandidate(2);
     assert.equal(firstCandidate[3].toNumber(), 1, "First voter should count for Alice");
     assert.equal(secondCandidate[3].toNumber(), 1, "Second voter should count for Bob");
-    assert.equal(await newVotingInstance.checkVote(firstVoterIdHash), true);
-    assert.equal(await newVotingInstance.checkVote(secondVoterIdHash), true);
+    assert.equal(await newVotingInstance.checkCredential(firstCredential), true);
+    assert.equal(await newVotingInstance.checkCredential(secondCredential), true);
   });
 
   it("should prevent double voting for the same voter ID", async () => {
@@ -73,15 +73,15 @@ contract("Voting", (accounts) => {
     await newVotingInstance.addCandidate("Charlie", "Party C");
     await newVotingInstance.startElection();
 
-    const voterIdHash = web3.utils.keccak256("VTR-003");
-    await newVotingInstance.vote(1, voterIdHash, { from: accounts[2] });
+    const credential = web3.utils.keccak256("opaque-random-credential-003");
+    await newVotingInstance.vote(1, credential, { from: accounts[2] });
 
     try {
-      await newVotingInstance.vote(1, voterIdHash, { from: accounts[2] });
+      await newVotingInstance.vote(1, credential, { from: accounts[2] });
       assert.fail("The transaction should have reverted");
     } catch (error) {
       assert(error.message.indexOf("revert") >= 0, "Error must contain revert");
-      assert(error.message.indexOf("Voter has already voted") >= 0, "Error should explain that the voter already voted");
+      assert(error.message.indexOf("Voting credential has already been used") >= 0, "Error should explain that the credential was already used");
     }
   });
 
@@ -95,7 +95,7 @@ contract("Voting", (accounts) => {
       assert.fail("The transaction should have reverted");
     } catch (error) {
       assert(error.message.indexOf("revert") >= 0, "Error must contain revert");
-      assert(error.message.indexOf("Invalid voter ID") >= 0, "Error should explain that the voter ID is invalid");
+      assert(error.message.indexOf("Invalid voting credential") >= 0, "Error should explain that the credential is invalid");
     }
   });
 
