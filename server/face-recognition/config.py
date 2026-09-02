@@ -50,6 +50,10 @@ class Settings(BaseSettings):
         "http://localhost:5173,http://127.0.0.1:5173"
     )
     COOKIE_SECURE: bool = False
+    BLOCKCHAIN_RPC_URL: str = "http://127.0.0.1:7545"
+    BLOCKCHAIN_CONTRACT_ADDRESS: str = ""
+    BLOCKCHAIN_RELAYER_PRIVATE_KEY: str = ""
+    VOTING_CREDENTIAL_TTL_MINUTES: int = 15
 
     @property
     def frontend_origins(self) -> list[str]:

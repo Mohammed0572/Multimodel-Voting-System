@@ -24,6 +24,7 @@ import os
 import json
 import base64
 import hashlib
+import secrets
 import pickle
 import sqlite3
 import logging
@@ -49,6 +50,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import bcrypt
+from web3 import Web3
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -63,6 +65,8 @@ from config import settings
 
 SECRET_KEY: str = settings.resolved_secret_key
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
+_CREDENTIAL_COOKIE = "voting_credential"
+_CREDENTIAL_MAX_AGE = settings.VOTING_CREDENTIAL_TTL_MINUTES * 60
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -188,6 +192,15 @@ def init_db() -> None:
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_admins_active ON admins(is_active);")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS voting_credentials (
+                credential_hash TEXT PRIMARY KEY NOT NULL,
+                voter_id TEXT NOT NULL,
+                issued_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                consumed_at TEXT
+            )
+        """)
         if os.path.exists(CSBS_SEED_PATH):
             for student in json.loads(Path(CSBS_SEED_PATH).read_text()):
                 cursor.execute(
@@ -204,6 +217,60 @@ def init_db() -> None:
                 )
         conn.commit()
     log.info("Database initialised at %s", DB_PATH)
+
+
+def issue_voting_credential(voter_id: str) -> Optional[str]:
+    """Create a random credential; only its SHA-256 digest is stored off-chain."""
+    credential = secrets.token_bytes(32)
+    credential_hash = hashlib.sha256(credential).hexdigest()
+    issued_at = datetime.now(timezone.utc)
+    expires_at = issued_at + timedelta(seconds=_CREDENTIAL_MAX_AGE)
+    with get_db() as conn:
+        if conn.execute("SELECT 1 FROM voting_credentials WHERE voter_id = ? AND consumed_at IS NOT NULL LIMIT 1", (voter_id,)).fetchone():
+            return None
+        conn.execute("UPDATE voting_credentials SET consumed_at = ? WHERE voter_id = ? AND consumed_at IS NULL", (issued_at.isoformat(), voter_id))
+        conn.execute(
+            "INSERT INTO voting_credentials (credential_hash, voter_id, issued_at, expires_at) VALUES (?, ?, ?, ?)",
+            (credential_hash, voter_id, issued_at.isoformat(), expires_at.isoformat()),
+        )
+        conn.commit()
+    return credential.hex()
+
+
+def _credential_hash_from_cookie(credential: str) -> str:
+    try:
+        raw = bytes.fromhex(credential)
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail="Invalid voting credential.") from exc
+    if len(raw) != 32:
+        raise HTTPException(status_code=401, detail="Invalid voting credential.")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def relay_vote(candidate_id: int, credential: bytes) -> str:
+    """Submit the opaque credential using the configured relayer account."""
+    if not settings.BLOCKCHAIN_CONTRACT_ADDRESS or not settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY:
+        raise HTTPException(status_code=503, detail="Voting relayer is not configured.")
+    web3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_RPC_URL))
+    if not web3.is_connected():
+        raise HTTPException(status_code=503, detail="Blockchain relayer is unavailable.")
+    abi = [
+        {"inputs": [{"internalType": "uint256", "name": "candidateID", "type": "uint256"}, {"internalType": "bytes32", "name": "credential", "type": "bytes32"}], "name": "vote", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
+    ]
+    contract = web3.eth.contract(address=Web3.to_checksum_address(settings.BLOCKCHAIN_CONTRACT_ADDRESS), abi=abi)
+    account = web3.eth.account.from_key(settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY)
+    nonce = web3.eth.get_transaction_count(account.address, "pending")
+    tx = contract.functions.vote(candidate_id, Web3.keccak(credential)).build_transaction({
+        "from": account.address,
+        "nonce": nonce,
+        "chainId": web3.eth.chain_id,
+        "gas": 180000,
+        "gasPrice": web3.eth.gas_price,
+    })
+    signed = account.sign_transaction(tx)
+    raw_transaction = signed.raw_transaction if hasattr(signed, "raw_transaction") else signed.rawTransaction
+    tx_hash = web3.eth.send_raw_transaction(raw_transaction)
+    return tx_hash.hex()
 
 
 def _average_encodings(encodings: list[np.ndarray]) -> np.ndarray:
@@ -632,6 +699,10 @@ class EligibilityVerificationRequest(BaseModel):
     verified: bool
 
 
+class CastVoteRequest(BaseModel):
+    candidate_id: int
+
+
 
 @app.post("/api/v1/auth/refresh")
 async def auth_refresh(request: Request, response: Response):
@@ -876,7 +947,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT role, face_encoding, name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
+            "SELECT role, face_encoding, name, usn, branch, validity, dob, id_verified FROM voters WHERE voter_id = ?",
             (voter_id,),
         )
         row = cursor.fetchone()
@@ -893,6 +964,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     profile_branch = row["branch"]
     profile_validity = row["validity"]
     profile_dob = row["dob"]
+    is_eligible = bool(row["id_verified"])
 
     try:
         stored_encoding = np.array(json.loads(row["face_encoding"]), dtype=np.float64)
@@ -925,6 +997,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         )
 
     token = create_jwt(voter_id, role)
+    voting_credential = issue_voting_credential(voter_id) if is_eligible and role == "user" else None
 
     response = JSONResponse(
         content={
@@ -947,6 +1020,16 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         max_age=_COOKIE_MAX_AGE,
         path="/",
     )
+    if voting_credential:
+        response.set_cookie(
+            key=_CREDENTIAL_COOKIE,
+            value=voting_credential,
+            httponly=True,
+            secure=settings.COOKIE_SECURE,
+            samesite="lax",
+            max_age=_CREDENTIAL_MAX_AGE,
+            path="/",
+        )
     log.info("[AUTH] voter='%s' role='%s' — HttpOnly cookie issued.", voter_id, role)
     return response
 
@@ -1078,20 +1161,74 @@ async def voter_eligibility(request: Request):
     voter_id = session.get("voter_id", "").strip().lower()
     with get_db() as conn:
         row = conn.execute(
-            """SELECT voter_id, student_name, branch, class_name, batch, id_verified
+            """SELECT voter_id, student_name, branch, class_name, batch, id_verified,
+                      EXISTS(SELECT 1 FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id AND vc.consumed_at IS NOT NULL) AS has_voted
                FROM voters WHERE voter_id = ?""",
             (voter_id,),
         ).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Voter is not registered.")
-    return {
+    result = {
         "voter_id": row["voter_id"].upper(),
         "student_name": row["student_name"],
         "branch": row["branch"],
         "class_name": row["class_name"],
         "batch": row["batch"],
         "eligible": bool(row["id_verified"]),
+        "voted": bool(row["has_voted"]),
     }
+    response = JSONResponse(result)
+    if result["eligible"] and not result["voted"] and not request.cookies.get(_CREDENTIAL_COOKIE):
+        credential = issue_voting_credential(voter_id)
+        if credential:
+            response.set_cookie(
+                key=_CREDENTIAL_COOKIE, value=credential, httponly=True,
+                secure=settings.COOKIE_SECURE, samesite="lax",
+                max_age=_CREDENTIAL_MAX_AGE, path="/",
+            )
+    return response
+
+
+@app.post("/api/v1/voter/cast")
+@limiter.limit("5/minute")
+async def cast_vote(request: Request, payload: CastVoteRequest):
+    """Consume the private voting credential and relay the ballot on-chain."""
+    auth_cookie = request.cookies.get(_COOKIE_NAME)
+    credential = request.cookies.get(_CREDENTIAL_COOKIE)
+    if not auth_cookie or not credential:
+        raise HTTPException(status_code=403, detail="A verified, eligible voting session is required.")
+    session = decode_jwt(auth_cookie)
+    if session.get("role") != "user":
+        raise HTTPException(status_code=403, detail="Only voter sessions can cast ballots.")
+    credential_hash = _credential_hash_from_cookie(credential)
+    now = datetime.now(timezone.utc)
+    with get_db() as conn:
+        row = conn.execute(
+            """SELECT voter_id, expires_at, consumed_at FROM voting_credentials
+               WHERE credential_hash = ?""",
+            (credential_hash,),
+        ).fetchone()
+        if row is None or row["voter_id"] != session.get("voter_id", "").lower():
+            raise HTTPException(status_code=403, detail="Invalid voting credential.")
+        if row["consumed_at"] or datetime.fromisoformat(row["expires_at"]) <= now:
+            raise HTTPException(status_code=409, detail="Voting credential has already been used or expired.")
+        cursor = conn.execute(
+            "UPDATE voting_credentials SET consumed_at = ? WHERE credential_hash = ? AND consumed_at IS NULL",
+            (now.isoformat(), credential_hash),
+        )
+        conn.commit()
+        if cursor.rowcount != 1:
+            raise HTTPException(status_code=409, detail="Voting credential has already been used.")
+    try:
+        tx_hash = relay_vote(payload.candidate_id, bytes.fromhex(credential))
+    except Exception:
+        with get_db() as conn:
+            conn.execute("UPDATE voting_credentials SET consumed_at = NULL WHERE credential_hash = ?", (credential_hash,))
+            conn.commit()
+        raise
+    response = JSONResponse({"tx_hash": tx_hash, "credential_consumed": True})
+    response.delete_cookie(_CREDENTIAL_COOKIE, path="/", samesite="lax")
+    return response
 
 
 @app.post("/api/v1/enroll-face", status_code=status.HTTP_201_CREATED)

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import Web3 from "web3";
 import { useWeb3 } from "../context/Web3Context";
 import { Link } from "react-router-dom";
 import { Chakra } from "../components/Chakra";
@@ -14,7 +13,7 @@ import {
   CalendarDays,
   BadgeCheck,
 } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { API_BASE, useAuth } from "../context/AuthContext";
 
 interface Candidate {
   id: number;
@@ -32,21 +31,11 @@ interface Eligibility {
   class_name: string;
   batch: string;
   eligible: boolean;
+  voted: boolean;
 }
 
 const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
 const SYMBOLS = ["🪷", "✋", "🌾", "🚲", "⊘"];
-
-// The contract keys voting eligibility by voter identity, while the wallet only
-// signs the transaction. Normalizing before hashing keeps the same voter ID
-// stable across login and vote submission.
-const hashVoterId = (voterId: string) => {
-  const encodedVoterId = new TextEncoder().encode(voterId.trim().toUpperCase());
-  // Web3 v1 types only declare string/BN, although the runtime accepts Uint8Array.
-  const hash = Web3.utils.sha3(encodedVoterId as unknown as string);
-  if (!hash) throw new Error("Unable to hash voter ID.");
-  return hash;
-};
 
 const Voting = () => {
   const { account, contract, isLoading, error, connectWallet } = useWeb3();
@@ -77,8 +66,7 @@ const Voting = () => {
     }
 
     try {
-      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
-      const eligibilityResponse = await fetch(`${apiBase}/voter/eligibility`, { credentials: 'include' });
+      const eligibilityResponse = await fetch(`${API_BASE}/voter/eligibility`, { credentials: 'include' });
       if (!eligibilityResponse.ok) {
         setEligibility(null);
         setIsCheckingEligibility(false);
@@ -86,6 +74,7 @@ const Voting = () => {
       }
       const eligibilityData = await eligibilityResponse.json() as Eligibility;
       setEligibility(eligibilityData);
+      setHasVoted(eligibilityData.voted);
       setIsCheckingEligibility(false);
       if (!eligibilityData.eligible) return;
 
@@ -107,13 +96,7 @@ const Voting = () => {
       }
       setCandidates(candidatesArray);
 
-      const voted = await contract.checkVote(hashVoterId(voterId));
-      setHasVoted(voted);
-      if (voted) {
-        setStage("sealed");
-      } else {
-        setStage("choose");
-      }
+      setStage(eligibilityData.voted ? "sealed" : "choose");
     } catch (error) {
       console.error("Error loading voting data:", error);
     }
@@ -146,18 +129,21 @@ const Voting = () => {
       return;
     }
 
-    const from = account || (await connectWallet());
-    if (!from) return;
-
     setStage("sealing");
 
     try {
-      const tx = await contract.vote(
-        selectedCandidateId,
-        hashVoterId(voterId),
-        { from },
-      );
-      const submittedHash = tx?.tx || tx?.receipt?.transactionHash || "";
+      const response = await fetch(`${API_BASE}/voter/cast`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidate_id: selectedCandidateId }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "The private voting credential could not be consumed.");
+      }
+      const result = await response.json();
+      const submittedHash = result.tx_hash || "";
       setTxHash(submittedHash);
       setReceiptCandidate(chosen || null);
       setHasVoted(true);
@@ -165,9 +151,7 @@ const Voting = () => {
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
-      alert(
-        "The ballot was not recorded. Check the wallet transaction and try again.",
-      );
+      alert(error instanceof Error ? error.message : "The ballot was not recorded. Please try again.");
       setStage("review");
     }
   };
