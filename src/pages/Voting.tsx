@@ -32,6 +32,7 @@ interface Eligibility {
   batch: string;
   eligible: boolean;
   voted: boolean;
+  credential_ready: boolean;
 }
 
 const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
@@ -56,6 +57,7 @@ const Voting = () => {
     null,
   );
   const [eligibility, setEligibility] = useState<Eligibility | null>(null);
+  const [credentialReady, setCredentialReady] = useState(false);
   const [isCheckingEligibility, setIsCheckingEligibility] = useState<boolean>(true);
 
   const loadVotingData = useCallback(async () => {
@@ -75,6 +77,7 @@ const Voting = () => {
       const eligibilityData = await eligibilityResponse.json() as Eligibility;
       setEligibility(eligibilityData);
       setHasVoted(eligibilityData.voted);
+      setCredentialReady(eligibilityData.credential_ready);
       setIsCheckingEligibility(false);
       if (!eligibilityData.eligible) return;
 
@@ -120,6 +123,10 @@ const Voting = () => {
 
   const handleVote = async () => {
     if (stage !== "review" || hasVoted || !selectedCandidateId) return;
+    if (!credentialReady) {
+      alert("Your secure voting session is not ready. Please authenticate again.");
+      return;
+    }
 
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
@@ -147,6 +154,7 @@ const Voting = () => {
       setTxHash(submittedHash);
       setReceiptCandidate(chosen || null);
       setHasVoted(true);
+      setCredentialReady(false);
       setStage("sealed");
       await loadVotingData();
     } catch (error) {
@@ -222,8 +230,7 @@ const Voting = () => {
                 Voter · {session?.voter_id || "Unknown"}
               </div>
               <div className="text-xs text-muted-foreground">
-                Account {account?.substring(0, 6)}...
-                {account?.substring(account.length - 4)}
+                {account ? `Network account ${account.substring(0, 6)}...${account.substring(account.length - 4)}` : "Read-only network session"}
               </div>
             </div>
             <button
@@ -271,7 +278,7 @@ const Voting = () => {
             </div>
             <div className="rounded-md bg-paper-warm px-4 py-3 text-right">
               <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Wallet
+                Private voting session
               </div>
               {account ? (
                 <div className="font-mono text-sm font-semibold text-india-green mt-1">
@@ -283,12 +290,19 @@ const Voting = () => {
                   onClick={() => void connectWallet()}
                   className="mt-1 font-mono text-sm font-semibold text-saffron hover:underline"
                 >
-                  Connect wallet
+                  Connect network
                 </button>
               )}
             </div>
           </div>
         </section>
+
+        {eligibility?.eligible && !hasVoted && credentialReady && (
+          <div className="mt-6 flex items-start gap-3 rounded-md border border-india-green/30 bg-india-green-light p-4 text-sm text-india-green" role="status">
+            <ShieldCheck className="mt-0.5 size-5 shrink-0" />
+            <div><strong>Secure voting session ready.</strong> Your one-time credential is protected in an HttpOnly cookie and will be consumed when you submit your ballot.</div>
+          </div>
+        )}
 
         <section className="mt-10 rounded-md border border-hairline bg-paper p-6 md:p-8">
           <div className="flex items-center justify-between gap-4">
@@ -435,8 +449,9 @@ const Voting = () => {
                       Confirm your selection
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Your choice will be submitted to the blockchain after you
-                      confirm the wallet transaction. This action cannot be undone.
+                      Your choice will be submitted through your private, one-time
+                      voting credential. No voter ID is sent with the ballot, and
+                      this action cannot be undone.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-3">
                       <button

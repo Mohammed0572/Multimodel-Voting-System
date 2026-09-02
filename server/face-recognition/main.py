@@ -1176,6 +1176,7 @@ async def voter_eligibility(request: Request):
         "batch": row["batch"],
         "eligible": bool(row["id_verified"]),
         "voted": bool(row["has_voted"]),
+        "credential_ready": bool(request.cookies.get(_CREDENTIAL_COOKIE)),
     }
     response = JSONResponse(result)
     if result["eligible"] and not result["voted"] and not request.cookies.get(_CREDENTIAL_COOKIE):
@@ -1186,6 +1187,7 @@ async def voter_eligibility(request: Request):
                 secure=settings.COOKIE_SECURE, samesite="lax",
                 max_age=_CREDENTIAL_MAX_AGE, path="/",
             )
+            result["credential_ready"] = True
     return response
 
 

@@ -172,7 +172,7 @@ const VoterLogin = () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setIsCameraActive(false);
-      updateStatus("Authentication successful. Redirecting…", "success");
+      updateStatus("Identity verified. Checking eligibility and preparing your private voting session…", "success");
       navigate("/voting");
     } catch (error) {
       console.error("Verification error:", error);
