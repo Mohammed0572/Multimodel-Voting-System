@@ -11,7 +11,14 @@ function findTesseractBinary() {
       stdio: ["pipe", "pipe", "ignore"],
     });
     const firstLine = versionOutput.trim().split("\n")[0];
-    return { installed: true, location: "PATH", version: firstLine };
+    let resolvedPath = "PATH";
+    try {
+      const whichCmd = os.platform() === "win32" ? "where tesseract" : "which tesseract";
+      resolvedPath = execSync(whichCmd, { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] }).trim().split("\n")[0];
+    } catch {
+      // Keep fallback
+    }
+    return { installed: true, location: resolvedPath, version: firstLine };
   } catch {
     // Continue to fallback checks
   }
