@@ -241,6 +241,17 @@ const Registration = () => {
     }
   };
 
+  const skipIDCard = () => {
+    // Never carry OCR/browser-autofill data into the manual demo path.
+    setName("");
+    setUsn("");
+    setBranch("");
+    setValidity("");
+    setDob("");
+    updateStatus("Enter the voter's details manually. Use the registered USN to continue.", "info");
+    setStep(2);
+  };
+
   const startWebcam = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       updateStatus("This browser does not support camera access.", "error");
@@ -410,7 +421,7 @@ const Registration = () => {
               </label>
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={skipIDCard}
                 className="text-xs text-india-blue underline w-full text-center"
               >
                 Skip — enter details manually
@@ -432,7 +443,8 @@ const Registration = () => {
                     type="text"
                     value={usn}
                     onChange={(e) => setUsn(e.target.value)}
-                    placeholder="1KG23CB052"
+                    placeholder="Enter USN"
+                    autoComplete="off"
                     className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:border-saffron focus:outline-none"
                   />
                 </div>
@@ -444,7 +456,8 @@ const Registration = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="SYED MOHAMMED NAQVI"
+                    placeholder="Enter name"
+                    autoComplete="off"
                     className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:border-saffron focus:outline-none"
                   />
                 </div>
@@ -456,7 +469,8 @@ const Registration = () => {
                     type="text"
                     value={branch}
                     onChange={(e) => setBranch(e.target.value)}
-                    placeholder="CS&BS"
+                    placeholder="Enter branch"
+                    autoComplete="off"
                     className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:border-saffron focus:outline-none"
                   />
                 </div>
@@ -468,7 +482,8 @@ const Registration = () => {
                     type="text"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
-                    placeholder="06-04-2005"
+                    placeholder="Enter date of birth"
+                    autoComplete="off"
                     className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:border-saffron focus:outline-none"
                   />
                 </div>
@@ -480,7 +495,8 @@ const Registration = () => {
                     type="text"
                     value={validity}
                     onChange={(e) => setValidity(e.target.value)}
-                    placeholder="2027"
+                    placeholder="Enter validity"
+                    autoComplete="off"
                     className="w-full rounded-md border border-hairline px-3 py-2 text-sm focus:border-saffron focus:outline-none"
                   />
                 </div>
