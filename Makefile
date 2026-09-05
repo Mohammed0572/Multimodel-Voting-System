@@ -11,11 +11,11 @@ TESSERACT ?= tesseract
 VENV_PY_WIN = server/face-recognition/.venv/Scripts/python.exe
 VENV_PY_UNIX = server/face-recognition/.venv/bin/python
 ifneq ($(wildcard $(VENV_PY_WIN)),)
-  PY_EXEC := $(VENV_PY_WIN)
+	BACKEND_PY := $(VENV_PY_WIN)
 else ifneq ($(wildcard $(VENV_PY_UNIX)),)
-  PY_EXEC := $(VENV_PY_UNIX)
+	BACKEND_PY := $(VENV_PY_UNIX)
 else
-  PY_EXEC := $(PYTHON)
+	BACKEND_PY := $(PYTHON)
 endif
 
 help:
@@ -53,7 +53,7 @@ install-node:
 
 install-python:
 	@echo "[*] Installing Python backend dependencies..."
-	cd server/face-recognition && $(PY_EXEC) -m pip install -r requirements.txt
+	$(BACKEND_PY) -m pip install -r server/face-recognition/requirements.txt
 
 install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
@@ -75,7 +75,7 @@ migrate:
 
 backend:
 	@echo "[*] Starting FastAPI face recognition backend on http://127.0.0.1:8000..."
-	cd server/face-recognition && $(PY_EXEC) -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+	$(BACKEND_PY) -m uvicorn --app-dir server/face-recognition main:app --host 127.0.0.1 --port 8000 --reload
 
 frontend:
 	@echo "[*] Starting Vite React frontend..."

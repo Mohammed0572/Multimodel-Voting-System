@@ -20,9 +20,10 @@ type Student = {
 
 const Admin = () => {
   const { t } = useLanguage();
-  const { account, contract, isLoading, error } = useWeb3();
+  const { account, contract, isLoading, error, connectWallet } = useWeb3();
   const [candidateName, setCandidateName] = useState("");
   const [candidateParty, setCandidateParty] = useState("");
+  const [contractOwner, setContractOwner] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ message: "", type: "" });
   const [electionState, setElectionState] = useState<number | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
@@ -43,12 +44,18 @@ const Admin = () => {
   }, [contract, loadState]);
 
   useEffect(() => {
+    if (!contract) return;
+    void contract.owner().then((owner: string) => setContractOwner(owner));
+  }, [contract]);
+
+  useEffect(() => {
     const loadStudents = async () => {
       try {
         const response = await fetch(`${API_BASE}/admin/voters`, {
           credentials: "include",
         });
-        if (!response.ok) throw new Error("Unable to load the CSBS voter registry.");
+        if (!response.ok)
+          throw new Error("Unable to load the CSBS voter registry.");
         const data = await response.json();
         setStudents(data.students ?? []);
       } catch (studentError) {
@@ -68,18 +75,70 @@ const Admin = () => {
 
   const handleEligibilityVerification = async (student: Student) => {
     try {
-      const response = await fetch(`${API_BASE}/admin/voters/${student.usn}/verify`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verified: !student.idVerified }),
-      });
-      if (!response.ok) throw new Error("Unable to update ID-card verification.");
-      setStudents((current) => current.map((item) => item.usn === student.usn ? { ...item, idVerified: !student.idVerified } : item));
-      updateStatus(`${student.usn} marked as ${student.idVerified ? "not verified" : "eligible after ID-card check"}.`, "success");
+      const response = await fetch(
+        `${API_BASE}/admin/voters/${student.usn}/verify`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ verified: !student.idVerified }),
+        },
+      );
+      if (!response.ok)
+        throw new Error("Unable to update ID-card verification.");
+      setStudents((current) =>
+        current.map((item) =>
+          item.usn === student.usn
+            ? { ...item, idVerified: !student.idVerified }
+            : item,
+        ),
+      );
+      updateStatus(
+        `${student.usn} marked as ${student.idVerified ? "not verified" : "eligible after ID-card check"}.`,
+        "success",
+      );
     } catch (verificationError) {
       console.error(verificationError);
-      updateStatus("Unable to save the ID-card verification to SQLite.", "error");
+      updateStatus(
+        "Unable to save the ID-card verification to SQLite.",
+        "error",
+      );
+    }
+  };
+
+  const handleDeleteVoter = async (student: Student) => {
+    if (
+      !window.confirm(
+        `Delete voter ${student.usn}? This removes their face registration and voting credentials.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/admin/voters/${encodeURIComponent(student.usn)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.detail || "Unable to delete voter.");
+      }
+      setStudents((current) =>
+        current.filter((item) => item.usn !== student.usn),
+      );
+      updateStatus(`${student.usn} was deleted.`, "success");
+    } catch (deleteError) {
+      console.error(deleteError);
+      updateStatus(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Unable to delete voter.",
+        "error",
+      );
     }
   };
 
@@ -89,8 +148,23 @@ const Admin = () => {
       updateStatus("Please fill all candidate fields.", "error");
       return;
     }
+    if (!contract || !account) {
+      updateStatus(
+        "Connect the MetaMask account used to deploy the contract.",
+        "error",
+      );
+      return;
+    }
 
     try {
+      const owner = await contract.owner();
+      if (owner.toLowerCase() !== account.toLowerCase()) {
+        updateStatus(
+          `Only the contract owner can add candidates. Switch MetaMask to ${owner}.`,
+          "error",
+        );
+        return;
+      }
       updateStatus("Processing transaction on blockchain...", "info");
       await contract.addCandidate(candidateName, candidateParty, {
         from: account,
@@ -100,25 +174,53 @@ const Admin = () => {
       setCandidateParty("");
     } catch (candidateError) {
       console.error(candidateError);
+      const errorMessage =
+        candidateError instanceof Error
+          ? candidateError.message
+          : String(candidateError);
       updateStatus(
-        "Failed to add candidate. Ensure you are the owner.",
+        errorMessage.includes("Not authorized")
+          ? "Only the contract owner can add candidates. Switch MetaMask to the deploying account."
+          : `Failed to add candidate: ${errorMessage}`,
         "error",
       );
     }
   };
 
   const handleStartElection = async () => {
+    if (!contract || !account) {
+      updateStatus(
+        "Connect the contract owner wallet before starting the election.",
+        "error",
+      );
+      return;
+    }
+
     try {
+      const [owner, currentState] = await Promise.all([
+        contract.owner(),
+        contract.getElectionState(),
+      ]);
+      if (owner.toLowerCase() !== account.toLowerCase()) {
+        updateStatus(
+          "Only the contract owner can start the election.",
+          "error",
+        );
+        return;
+      }
+      if (Number(currentState.toString()) !== 0) {
+        updateStatus("The election has already started or ended.", "error");
+        return;
+      }
       updateStatus("Processing transaction on blockchain...", "info");
       await contract.startElection({ from: account });
       updateStatus("Election started successfully!", "success");
       loadState();
     } catch (startError) {
       console.error(startError);
-      updateStatus(
-        "Failed to start election. Ensure you are the owner and it is not already started.",
-        "error",
-      );
+      const errorMessage =
+        startError instanceof Error ? startError.message : String(startError);
+      updateStatus(`Failed to start election: ${errorMessage}`, "error");
     }
   };
 
@@ -195,14 +297,16 @@ const Admin = () => {
 
       {status.message && (
         <div
-          className={`mb-6 ${status.type === "error" ? "gov-alert-error" : status.type === "success" ? "gov-alert-success" : "gov-alert-info"} rounded-sm`}>
+          className={`mb-6 ${status.type === "error" ? "gov-alert-error" : status.type === "success" ? "gov-alert-success" : "gov-alert-info"} rounded-sm`}
+        >
           <strong>Status:</strong> {status.message}
         </div>
       )}
 
       <section
         className="admin-overview-grid"
-        aria-label="CSBS election overview">
+        aria-label="CSBS election overview"
+      >
         <div className="admin-stat-card admin-stat-primary">
           <span className="admin-stat-label">Eligible voters</span>
           <strong>{students.length}</strong>
@@ -227,7 +331,8 @@ const Admin = () => {
 
       <section
         className="admin-roster-card mt-8"
-        aria-labelledby="roster-heading">
+        aria-labelledby="roster-heading"
+      >
         <div className="admin-section-heading">
           <div>
             <p className="admin-eyebrow">VOTER ELIGIBILITY</p>
@@ -240,9 +345,11 @@ const Admin = () => {
         <div className="admin-distribution">
           <div
             className="admin-donut"
-            aria-label={`${students.length} CSBS students, all in the CB branch`}>
+            aria-label={`${students.length} CSBS students, all in the CB branch`}
+          >
             <span>
-              {students.length}<small>CSBS</small>
+              {students.length}
+              <small>CSBS</small>
             </span>
           </div>
           <div className="admin-legend">
@@ -250,7 +357,10 @@ const Admin = () => {
               <span className="admin-legend-swatch" />
               <div>
                 <strong>CB · CSBS</strong>
-                <small>{students.length} students · {students.length ? "100" : "0"}% of loaded eligible voters</small>
+                <small>
+                  {students.length} students · {students.length ? "100" : "0"}%
+                  of loaded eligible voters
+                </small>
               </div>
             </div>
             <p>
@@ -275,52 +385,78 @@ const Admin = () => {
           </label>
         </div>
         <div className="admin-table-wrap">
-          {isLoadingStudents && <p className="py-10 text-center text-slate-500">Loading CSBS students from SQLite…</p>}
-          {!isLoadingStudents && <>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>USN</th>
-                <th>Name</th>
-                <th>Class</th>
-                <th>Branch</th>
-                <th>Batch</th>
-                <th>ID-card check</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.map((student) => (
-                <tr key={student.usn}>
-                  <td>{student.number}</td>
-                  <td className="font-mono font-semibold text-[#112e51]">
-                    {student.usn}
-                  </td>
-                  <td>{student.studentName || "Name not provided"}</td>
-                  <td>{student.className}</td>
-                  <td>
-                    <span className="admin-code-chip">{student.branch}</span>
-                  </td>
-                  <td>{student.batch}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className={student.idVerified ? "admin-eligible" : "admin-unverified"}
-                      onClick={() => handleEligibilityVerification(student)}
-                      title="Toggle physical ID-card verification">
-                      {student.idVerified ? "ID verified" : "Verify ID card"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filteredStudents.length === 0 && (
+          {isLoadingStudents && (
             <p className="py-10 text-center text-slate-500">
-              No eligible CSBS USN matches that search.
+              Loading CSBS students from SQLite…
             </p>
           )}
-          </>}
+          {!isLoadingStudents && (
+            <>
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>USN</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Branch</th>
+                    <th>Batch</th>
+                    <th>ID-card check</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.map((student) => (
+                    <tr key={student.usn}>
+                      <td>{student.number}</td>
+                      <td className="font-mono font-semibold text-[#112e51]">
+                        {student.usn}
+                      </td>
+                      <td>{student.studentName || "Name not provided"}</td>
+                      <td>{student.className}</td>
+                      <td>
+                        <span className="admin-code-chip">
+                          {student.branch}
+                        </span>
+                      </td>
+                      <td>{student.batch}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className={
+                            student.idVerified
+                              ? "admin-eligible"
+                              : "admin-unverified"
+                          }
+                          onClick={() => handleEligibilityVerification(student)}
+                          title="Toggle physical ID-card verification"
+                        >
+                          {student.idVerified
+                            ? "ID verified"
+                            : "Verify ID card"}
+                        </button>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-unverified"
+                          onClick={() => handleDeleteVoter(student)}
+                          title={`Delete ${student.usn}`}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredStudents.length === 0 && (
+                <p className="py-10 text-center text-slate-500">
+                  No eligible CSBS USN matches that search.
+                </p>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -333,6 +469,20 @@ const Admin = () => {
             </h2>
           </div>
           <form onSubmit={handleAddCandidate} className="space-y-4">
+            <p className="text-xs text-slate-500 break-all">
+              Connected wallet: {account || "Not connected"}
+              <br />
+              Contract owner: {contractOwner || "Loading..."}
+            </p>
+            {!account && (
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => void connectWallet()}
+              >
+                Connect MetaMask
+              </button>
+            )}
             <div>
               <label className="gov-input-label" htmlFor="candidateName">
                 {t("admin.cand_name")}
@@ -380,14 +530,16 @@ const Admin = () => {
               type="button"
               className="btn-primary"
               onClick={handleStartElection}
-              disabled={electionState !== 0}>
+              disabled={electionState !== 0}
+            >
               Start Election
             </button>
             <button
               type="button"
               className="btn-primary bg-danger hover:bg-danger-dark border-transparent text-white"
               onClick={handleEndElection}
-              disabled={electionState !== 1}>
+              disabled={electionState !== 1}
+            >
               End Election
             </button>
           </div>

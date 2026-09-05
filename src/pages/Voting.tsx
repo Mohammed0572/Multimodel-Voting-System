@@ -33,6 +33,7 @@ interface Eligibility {
   eligible: boolean;
   voted: boolean;
   credential_ready: boolean;
+  tx_hash?: string | null;
 }
 
 const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
@@ -58,7 +59,8 @@ const Voting = () => {
   );
   const [eligibility, setEligibility] = useState<Eligibility | null>(null);
   const [credentialReady, setCredentialReady] = useState(false);
-  const [isCheckingEligibility, setIsCheckingEligibility] = useState<boolean>(true);
+  const [isCheckingEligibility, setIsCheckingEligibility] =
+    useState<boolean>(true);
 
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
@@ -68,18 +70,20 @@ const Voting = () => {
     }
 
     try {
-      const eligibilityResponse = await fetch(`${API_BASE}/voter/eligibility`, { credentials: 'include' });
+      const eligibilityResponse = await fetch(`${API_BASE}/voter/eligibility`, {
+        credentials: "include",
+      });
       if (!eligibilityResponse.ok) {
         setEligibility(null);
         setIsCheckingEligibility(false);
         return;
       }
-      const eligibilityData = await eligibilityResponse.json() as Eligibility;
+      const eligibilityData = (await eligibilityResponse.json()) as Eligibility;
       setEligibility(eligibilityData);
       setHasVoted(eligibilityData.voted);
       setCredentialReady(eligibilityData.credential_ready);
+      setTxHash(eligibilityData.tx_hash || "");
       setIsCheckingEligibility(false);
-      if (!eligibilityData.eligible) return;
 
       const stateResult = await contract.getElectionState();
       setElectionState(stateResult.toNumber());
@@ -99,9 +103,11 @@ const Voting = () => {
       }
       setCandidates(candidatesArray);
 
+      if (!eligibilityData.eligible) return;
       setStage(eligibilityData.voted ? "sealed" : "choose");
     } catch (error) {
       console.error("Error loading voting data:", error);
+      setIsCheckingEligibility(false);
     }
   }, [contract, session?.voter_id]);
 
@@ -124,7 +130,9 @@ const Voting = () => {
   const handleVote = async () => {
     if (stage !== "review" || hasVoted || !selectedCandidateId) return;
     if (!credentialReady) {
-      alert("Your secure voting session is not ready. Please authenticate again.");
+      alert(
+        "Your secure voting session is not ready. Please authenticate again.",
+      );
       return;
     }
 
@@ -147,7 +155,10 @@ const Voting = () => {
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || "The private voting credential could not be consumed.");
+        throw new Error(
+          errorData.detail ||
+            "The private voting credential could not be consumed.",
+        );
       }
       const result = await response.json();
       const submittedHash = result.tx_hash || "";
@@ -159,7 +170,11 @@ const Voting = () => {
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
-      alert(error instanceof Error ? error.message : "The ballot was not recorded. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "The ballot was not recorded. Please try again.",
+      );
       setStage("review");
     }
   };
@@ -230,7 +245,9 @@ const Voting = () => {
                 Voter · {session?.voter_id || "Unknown"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {account ? `Network account ${account.substring(0, 6)}...${account.substring(account.length - 4)}` : "Read-only network session"}
+                {account
+                  ? `Network account ${account.substring(0, 6)}...${account.substring(account.length - 4)}`
+                  : "Read-only network session"}
               </div>
             </div>
             <button
@@ -266,8 +283,13 @@ const Voting = () => {
                 <span className="inline-flex items-center gap-1.5">
                   <MapPin className="size-4" /> Local Constituency
                 </span>
-                <span className={`inline-flex items-center gap-1.5 ${eligibility?.eligible ? 'text-india-green' : 'text-saffron'}`}>
-                  <ShieldCheck className="size-4" /> {eligibility?.eligible ? 'Eligibility verified' : 'Eligibility pending'}
+                <span
+                  className={`inline-flex items-center gap-1.5 ${eligibility?.eligible ? "text-india-green" : "text-saffron"}`}
+                >
+                  <ShieldCheck className="size-4" />{" "}
+                  {eligibility?.eligible
+                    ? "Eligibility verified"
+                    : "Eligibility pending"}
                 </span>
                 {hasVoted && (
                   <span className="inline-flex items-center gap-1.5 text-india-green">
@@ -298,9 +320,16 @@ const Voting = () => {
         </section>
 
         {eligibility?.eligible && !hasVoted && credentialReady && (
-          <div className="mt-6 flex items-start gap-3 rounded-md border border-india-green/30 bg-india-green-light p-4 text-sm text-india-green" role="status">
+          <div
+            className="mt-6 flex items-start gap-3 rounded-md border border-india-green/30 bg-india-green-light p-4 text-sm text-india-green"
+            role="status"
+          >
             <ShieldCheck className="mt-0.5 size-5 shrink-0" />
-            <div><strong>Secure voting session ready.</strong> Your one-time credential is protected in an HttpOnly cookie and will be consumed when you submit your ballot.</div>
+            <div>
+              <strong>Secure voting session ready.</strong> Your one-time
+              credential is protected in an HttpOnly cookie and will be consumed
+              when you submit your ballot.
+            </div>
           </div>
         )}
 
@@ -345,13 +374,49 @@ const Voting = () => {
         ) : (
           <>
             {isCheckingEligibility ? (
-              <section className="mt-10 rounded-md border border-hairline bg-paper p-8 text-center text-muted-foreground">Checking your voter eligibility…</section>
+              <section className="mt-10 rounded-md border border-hairline bg-paper p-8 text-center text-muted-foreground">
+                Checking your voter eligibility…
+              </section>
             ) : !eligibility?.eligible ? (
-              <section className="mt-10 rounded-md border border-saffron/40 bg-saffron/5 p-8" aria-labelledby="eligibility-heading">
-                <div className="text-xs uppercase tracking-[0.2em] text-saffron">Eligibility check</div>
-                <h2 id="eligibility-heading" className="mt-2 font-display text-2xl font-semibold">{eligibility ? 'You are not eligible to vote yet' : 'We could not confirm your eligibility'}</h2>
-                <p className="mt-3 text-sm text-muted-foreground">{eligibility ? 'Your face was authenticated, but your CSBS ID card has not been approved by the administrator. Please register your details or contact the election administrator.' : 'Please register your details or contact the election administrator before trying again.'}</p>
-                {eligibility && <div className="mt-5 grid gap-2 rounded-md border border-hairline bg-paper p-4 text-sm sm:grid-cols-2"><span><strong>USN:</strong> {eligibility.voter_id}</span><span><strong>Name:</strong> {eligibility.student_name || 'Not available'}</span><span><strong>Class:</strong> {eligibility.class_name || 'Not registered'}</span><span><strong>Branch:</strong> {eligibility.branch || 'Not registered'}</span></div>}
+              <section
+                className="mt-10 rounded-md border border-saffron/40 bg-saffron/5 p-8"
+                aria-labelledby="eligibility-heading"
+              >
+                <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                  Eligibility check
+                </div>
+                <h2
+                  id="eligibility-heading"
+                  className="mt-2 font-display text-2xl font-semibold"
+                >
+                  {eligibility
+                    ? "You are not eligible to vote yet"
+                    : "We could not confirm your eligibility"}
+                </h2>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {eligibility
+                    ? "Your face was authenticated, but your CSBS ID card has not been approved by the administrator. Please register your details or contact the election administrator."
+                    : "Please register your details or contact the election administrator before trying again."}
+                </p>
+                {eligibility && (
+                  <div className="mt-5 grid gap-2 rounded-md border border-hairline bg-paper p-4 text-sm sm:grid-cols-2">
+                    <span>
+                      <strong>USN:</strong> {eligibility.voter_id}
+                    </span>
+                    <span>
+                      <strong>Name:</strong>{" "}
+                      {eligibility.student_name || "Not available"}
+                    </span>
+                    <span>
+                      <strong>Class:</strong>{" "}
+                      {eligibility.class_name || "Not registered"}
+                    </span>
+                    <span>
+                      <strong>Branch:</strong>{" "}
+                      {eligibility.branch || "Not registered"}
+                    </span>
+                  </div>
+                )}
               </section>
             ) : (
               <>
@@ -449,9 +514,9 @@ const Voting = () => {
                       Confirm your selection
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Your choice will be submitted through your private, one-time
-                      voting credential. No voter ID is sent with the ballot, and
-                      this action cannot be undone.
+                      Your choice will be submitted through your private,
+                      one-time voting credential. No voter ID is sent with the
+                      ballot, and this action cannot be undone.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-3">
                       <button

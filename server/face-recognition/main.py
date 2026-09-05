@@ -171,6 +171,12 @@ def init_db() -> None:
                 pass # Column already exists
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_voters_role ON voters(role);")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS deleted_voters (
+                voter_id   TEXT PRIMARY KEY NOT NULL,
+                deleted_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
         existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(voters)").fetchall()}
         for column, definition in {
             "student_name": "TEXT NOT NULL DEFAULT ''",
@@ -198,22 +204,38 @@ def init_db() -> None:
                 voter_id TEXT NOT NULL,
                 issued_at TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
-                consumed_at TEXT
+                consumed_at TEXT,
+                tx_hash TEXT
             )
         """)
+        try:
+            cursor.execute("ALTER TABLE voting_credentials ADD COLUMN tx_hash TEXT")
+        except sqlite3.OperationalError:
+            pass
+        if os.getenv("RESET_VOTING_CREDENTIALS_ON_START", "false").lower() == "true":
+            cursor.execute("DELETE FROM voting_credentials")
+            log.info("Demo mode: reset voting credentials for the new local election.")
         if os.path.exists(CSBS_SEED_PATH):
             for student in json.loads(Path(CSBS_SEED_PATH).read_text()):
                 cursor.execute(
                     """
                     INSERT INTO voters (voter_id, role, face_encoding, student_name, branch, class_name, batch)
-                    VALUES (?, 'user', '', ?, 'CB', 'CSBS', ?)
+                    SELECT ?, 'user', '', ?, 'CB', 'CSBS', ?
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM deleted_voters WHERE voter_id = ?
+                    )
                     ON CONFLICT(voter_id) DO UPDATE SET
                         student_name = excluded.student_name,
                         branch = excluded.branch,
                         class_name = excluded.class_name,
                         batch = excluded.batch
                     """,
-                    (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023"),
+                    (
+                        student["usn"].lower(),
+                        student.get("student_name", ""),
+                        "2024" if student["usn"].startswith("1KG24") else "2023",
+                        student["usn"].lower(),
+                    ),
                 )
         conn.commit()
     log.info("Database initialised at %s", DB_PATH)
@@ -226,7 +248,11 @@ def issue_voting_credential(voter_id: str) -> Optional[str]:
     issued_at = datetime.now(timezone.utc)
     expires_at = issued_at + timedelta(seconds=_CREDENTIAL_MAX_AGE)
     with get_db() as conn:
-        if conn.execute("SELECT 1 FROM voting_credentials WHERE voter_id = ? AND consumed_at IS NOT NULL LIMIT 1", (voter_id,)).fetchone():
+        latest = conn.execute(
+            "SELECT consumed_at FROM voting_credentials WHERE voter_id = ? ORDER BY issued_at DESC LIMIT 1",
+            (voter_id,),
+        ).fetchone()
+        if latest and latest["consumed_at"] is not None:
             return None
         conn.execute("UPDATE voting_credentials SET consumed_at = ? WHERE voter_id = ? AND consumed_at IS NULL", (issued_at.isoformat(), voter_id))
         conn.execute(
@@ -270,6 +296,9 @@ def relay_vote(candidate_id: int, credential: bytes) -> str:
     signed = account.sign_transaction(tx)
     raw_transaction = signed.raw_transaction if hasattr(signed, "raw_transaction") else signed.rawTransaction
     tx_hash = web3.eth.send_raw_transaction(raw_transaction)
+    receipt = web3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    if not receipt.get("status"):
+        raise HTTPException(status_code=502, detail="The blockchain rejected the ballot transaction.")
     return tx_hash.hex()
 
 
@@ -1150,6 +1179,37 @@ async def verify_voter_eligibility(
     return {"voter_id": normalized_id.upper(), "id_verified": payload.verified}
 
 
+@app.delete("/api/v1/admin/voters/{voter_id}")
+@limiter.limit("30/minute")
+async def delete_voter(
+    request: Request,
+    voter_id: str,
+    _admin: dict = Depends(require_admin),
+):
+    """Remove a voter and any server-side voting credentials issued to them."""
+    normalized_id = voter_id.strip().lower()
+    if not normalized_id:
+        raise HTTPException(status_code=400, detail="Voter ID is required.")
+
+    with get_db() as conn:
+        voter = conn.execute(
+            "SELECT voter_id FROM voters WHERE voter_id = ?",
+            (normalized_id,),
+        ).fetchone()
+        if voter is None:
+            raise HTTPException(status_code=404, detail="Voter not found.")
+
+        conn.execute(
+            "INSERT OR IGNORE INTO deleted_voters (voter_id) VALUES (?)",
+            (normalized_id,),
+        )
+        conn.execute("DELETE FROM voting_credentials WHERE voter_id = ?", (normalized_id,))
+        conn.execute("DELETE FROM voters WHERE voter_id = ?", (normalized_id,))
+        conn.commit()
+
+    return {"voter_id": normalized_id.upper(), "deleted": True}
+
+
 @app.get("/api/v1/voter/eligibility")
 @limiter.limit("30/minute")
 async def voter_eligibility(request: Request):
@@ -1162,7 +1222,8 @@ async def voter_eligibility(request: Request):
     with get_db() as conn:
         row = conn.execute(
             """SELECT voter_id, student_name, branch, class_name, batch, id_verified,
-                      EXISTS(SELECT 1 FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id AND vc.consumed_at IS NOT NULL) AS has_voted
+                      (SELECT tx_hash FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id ORDER BY vc.issued_at DESC LIMIT 1) AS tx_hash,
+                      COALESCE((SELECT consumed_at IS NOT NULL FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id ORDER BY vc.issued_at DESC LIMIT 1), 0) AS has_voted
                FROM voters WHERE voter_id = ?""",
             (voter_id,),
         ).fetchone()
@@ -1176,6 +1237,7 @@ async def voter_eligibility(request: Request):
         "batch": row["batch"],
         "eligible": bool(row["id_verified"]),
         "voted": bool(row["has_voted"]),
+        "tx_hash": row["tx_hash"],
         "credential_ready": bool(request.cookies.get(_CREDENTIAL_COOKIE)),
     }
     response = JSONResponse(result)
@@ -1228,6 +1290,12 @@ async def cast_vote(request: Request, payload: CastVoteRequest):
             conn.execute("UPDATE voting_credentials SET consumed_at = NULL WHERE credential_hash = ?", (credential_hash,))
             conn.commit()
         raise
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE voting_credentials SET tx_hash = ? WHERE credential_hash = ?",
+            (tx_hash, credential_hash),
+        )
+        conn.commit()
     response = JSONResponse({"tx_hash": tx_hash, "credential_consumed": True})
     response.delete_cookie(_CREDENTIAL_COOKIE, path="/", samesite="lax")
     return response

@@ -52,6 +52,31 @@ def test_health():
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
 
+
+def test_admin_can_delete_voter_and_credentials():
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO voters (voter_id, role, face_encoding) VALUES (?, ?, ?)",
+            ("delete_me", "user", "[1, 2, 3]"),
+        )
+        conn.execute(
+            "INSERT INTO voting_credentials (credential_hash, voter_id, issued_at, expires_at) VALUES (?, ?, ?, ?)",
+            ("credential-to-delete", "delete_me", "2026-01-01", "2026-01-01"),
+        )
+        conn.commit()
+
+    with TestClient(app) as client:
+        response = client.delete(
+            "/api/v1/admin/voters/delete_me",
+            headers={"Authorization": f"Bearer {get_admin_token()}"},
+        )
+
+    assert response.status_code == 200
+    with get_db() as conn:
+        assert conn.execute("SELECT 1 FROM voters WHERE voter_id = ?", ("delete_me",)).fetchone() is None
+        assert conn.execute("SELECT 1 FROM voting_credentials WHERE voter_id = ?", ("delete_me",)).fetchone() is None
+
+
 @patch("main.get_face_embedding")
 def test_enroll_face_success(mock_embed):
     mock_embed.return_value = np.ones(128)

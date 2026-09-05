@@ -211,6 +211,22 @@ async function main() {
     process.exit(1);
   }
 
+  const votingArtifact = JSON.parse(
+    fs.readFileSync(
+      path.join(rootDir, "src", "contracts", "Voting.json"),
+      "utf8",
+    ),
+  );
+  const localContractAddress = votingArtifact.networks?.["1337"]?.address;
+  if (!localContractAddress) {
+    log(
+      prefix.system,
+      `${colors.red}Could not find the deployed local Voting contract address.${colors.reset}`,
+    );
+    cleanup();
+    process.exit(1);
+  }
+
   // 3. Start Backend
   const pythonExec = findPython();
   log(
@@ -231,6 +247,13 @@ async function main() {
     ],
     {
       cwd: path.join(rootDir, "server", "face-recognition"),
+      env: {
+        ...process.env,
+        BLOCKCHAIN_CONTRACT_ADDRESS: localContractAddress,
+        RESET_VOTING_CREDENTIALS_ON_START: "true",
+        BLOCKCHAIN_RELAYER_PRIVATE_KEY:
+          "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
+      },
       shell: true,
       stdio: "pipe",
     },
