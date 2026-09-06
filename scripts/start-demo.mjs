@@ -73,35 +73,73 @@ function findPython() {
   return process.platform === "win32" ? "python" : "python3";
 }
 
-function waitForPort(port, host = "127.0.0.1", timeoutMs = 15000) {
+function resolveCli(packageName, relativeCliPath) {
+  const directPath = path.join(
+    rootDir,
+    "node_modules",
+    packageName,
+    relativeCliPath,
+  );
+  if (fs.existsSync(directPath)) {
+    return { command: process.execPath, args: [directPath], isCmd: false };
+  }
+  const isWin = process.platform === "win32";
+  const binFile = isWin ? `${packageName}.cmd` : packageName;
+  const localBin = path.join(rootDir, "node_modules", ".bin", binFile);
+  if (fs.existsSync(localBin)) {
+    return { command: localBin, args: [], isCmd: isWin };
+  }
+  return { command: "npx", args: [packageName], isCmd: isWin };
+}
+
+function spawnService(command, args, options = {}) {
+  const isCmd =
+    options.isCmd ??
+    (process.platform === "win32" &&
+      (command.endsWith(".cmd") || command.endsWith(".bat")));
+  return spawn(command, args, {
+    cwd: rootDir,
+    shell: isCmd,
+    stdio: "pipe",
+    ...options,
+  });
+}
+
+function waitForPort(port, host = "127.0.0.1", timeoutMs = 45000) {
   const startTime = Date.now();
+  let lastLoggedSec = 0;
+
   return new Promise((resolve, reject) => {
     const check = () => {
       const socket = new net.Socket();
-      socket.setTimeout(500);
+      socket.setTimeout(800);
 
       socket.once("connect", () => {
         socket.destroy();
         resolve();
       });
 
-      socket.once("error", () => {
+      const retry = () => {
         socket.destroy();
-        if (Date.now() - startTime > timeoutMs) {
-          reject(new Error(`Timeout waiting for port ${port}`));
+        const elapsed = Date.now() - startTime;
+        if (elapsed > timeoutMs) {
+          reject(
+            new Error(
+              `Timeout waiting for port ${port} after ${Math.round(timeoutMs / 1000)}s. Please check that Ganache is able to start without port conflicts.`,
+            ),
+          );
         } else {
-          setTimeout(check, 400);
+          const elapsedSec = Math.floor(elapsed / 1000);
+          if (elapsedSec >= 4 && elapsedSec !== lastLoggedSec && elapsedSec % 4 === 0) {
+            lastLoggedSec = elapsedSec;
+            log(prefix.system, `Still waiting for port ${port} (${elapsedSec}s elapsed)...`);
+          }
+          setTimeout(check, 300);
         }
-      });
+      };
 
-      socket.once("timeout", () => {
-        socket.destroy();
-        if (Date.now() - startTime > timeoutMs) {
-          reject(new Error(`Timeout waiting for port ${port}`));
-        } else {
-          setTimeout(check, 400);
-        }
-      });
+      socket.once("error", retry);
+      socket.once("timeout", retry);
 
       socket.connect(port, host);
     };
@@ -110,11 +148,17 @@ function waitForPort(port, host = "127.0.0.1", timeoutMs = 15000) {
   });
 }
 
-function runCommand(command, args, cwd = rootDir, logPrefix = prefix.system) {
+function runCommand(
+  command,
+  args,
+  cwd = rootDir,
+  logPrefix = prefix.system,
+  isCmd = false,
+) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
-      shell: true,
+      shell: isCmd,
       stdio: "pipe",
     });
 
@@ -170,14 +214,18 @@ async function main() {
     prefix.system,
     "Starting Ganache blockchain on port 7545 (networkId 1337)...",
   );
-  const ganacheProc = spawn(
-    "npx",
-    ["ganache", "--port", "7545", "--deterministic", "--networkId", "1337"],
-    {
-      cwd: rootDir,
-      shell: true,
-      stdio: "pipe",
-    },
+  const ganacheCli = resolveCli("ganache", path.join("dist", "node", "cli.js"));
+  const ganacheProc = spawnService(
+    ganacheCli.command,
+    [
+      ...ganacheCli.args,
+      "--port",
+      "7545",
+      "--deterministic",
+      "--networkId",
+      "1337",
+    ],
+    { isCmd: ganacheCli.isCmd },
   );
   activeProcesses.push(ganacheProc);
   pipeOutput(ganacheProc, prefix.ganache);
@@ -189,10 +237,11 @@ async function main() {
   // 2. Run Truffle Migrate
   log(prefix.system, "Deploying smart contracts to Ganache...");
   try {
+    const truffleCli = resolveCli("truffle", path.join("build", "cli.bundled.js"));
     await runCommand(
-      "npx",
+      truffleCli.command,
       [
-        "truffle",
+        ...truffleCli.args,
         "migrate",
         "--reset",
         "--config",
@@ -200,6 +249,7 @@ async function main() {
       ],
       rootDir,
       prefix.migrate,
+      truffleCli.isCmd,
     );
     log(prefix.system, "Smart contracts successfully deployed!");
   } catch (err) {
@@ -233,7 +283,7 @@ async function main() {
     prefix.system,
     `Starting Python FastAPI backend using [${pythonExec}]...`,
   );
-  const backendProc = spawn(
+  const backendProc = spawnService(
     pythonExec,
     [
       "-m",
@@ -254,8 +304,6 @@ async function main() {
         BLOCKCHAIN_RELAYER_PRIVATE_KEY:
           "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
       },
-      shell: true,
-      stdio: "pipe",
     },
   );
   activeProcesses.push(backendProc);
@@ -263,10 +311,13 @@ async function main() {
 
   // 4. Start Frontend
   log(prefix.system, "Starting Vite React frontend...");
-  const frontendProc = spawn("npx", ["vite"], {
-    cwd: rootDir,
-    shell: true,
-    stdio: "pipe",
+  const viteCli = resolveCli("vite", path.join("bin", "vite.js"));
+  const frontendProc = spawnService(viteCli.command, [...viteCli.args], {
+    env: {
+      ...process.env,
+      VITE_CONFIG_NATIVE_IGNORE_WARNING: "true",
+    },
+    isCmd: viteCli.isCmd,
   });
   activeProcesses.push(frontendProc);
   pipeOutput(frontendProc, prefix.frontend);
@@ -275,7 +326,7 @@ async function main() {
     `\n${colors.bright}${colors.green}✔ All services are running!${colors.reset}`,
   );
   console.log(
-    `  - Frontend: ${colors.cyan}http://localhost:5173${colors.reset}`,
+    `  - Frontend: ${colors.cyan}http://localhost:8080${colors.reset}`,
   );
   console.log(
     `  - Backend:  ${colors.cyan}http://localhost:8000${colors.reset}`,

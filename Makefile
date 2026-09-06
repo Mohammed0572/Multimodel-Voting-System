@@ -23,16 +23,16 @@ help:
 	@echo "           Multimodal Voting System Makefile            "
 	@echo "========================================================"
 	@echo "Available commands:"
-	@echo "  make install           - Install all dependencies (Node, Python & Tesseract OCR)"
+	@echo "  make install           - Install all dependencies (Node & Python)"
 	@echo "  make install-node      - Install Node.js dependencies via pnpm"
 	@echo "  make install-python    - Install Python face-recognition dependencies"
-	@echo "  make install-tesseract - Check and install Tesseract OCR dependency"
+	@echo "  make install-tesseract - Optional: Check/install system Tesseract OCR"
 	@echo "  make compile           - Compile Solidity smart contracts"
 	@echo "  make ganache           - Start local Ganache blockchain on port 7545"
 	@echo "  make migrate           - Deploy smart contracts to local Ganache"
 	@echo "  make backend           - Start FastAPI face recognition backend"
 	@echo "  make frontend          - Start Vite React frontend"
-	@echo "  make dev               - Check dependencies & start Vite React frontend"
+	@echo "  make dev               - Install node dependencies & start frontend"
 	@echo "  make build             - Build the frontend for production"
 	@echo "  make lint              - Run linter (ESLint)"
 	@echo "  make test              - Run all tests (frontend, backend, contracts)"
@@ -45,7 +45,7 @@ help:
 	@echo "  make clean             - Remove build and cache artifacts"
 	@echo "========================================================"
 
-install: install-node install-python install-tesseract
+install: install-node install-python
 
 install-node:
 	@echo "[*] Installing Node.js dependencies..."
@@ -59,7 +59,7 @@ install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
 	@node scripts/install-tesseract.mjs
 
-dev: install-node install-tesseract frontend
+dev: install-node frontend
 
 compile:
 	@echo "[*] Compiling Solidity smart contracts..."
@@ -111,7 +111,7 @@ docker-down:
 	@echo "[*] Stopping Docker Compose stack..."
 	docker compose -f server/docker-compose.yml down
 
-demo: install-tesseract
+demo: install-node
 	@node scripts/start-demo.mjs
 
 clean:
