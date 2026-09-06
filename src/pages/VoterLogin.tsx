@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth, API_BASE } from "../context/AuthContext";
+import { getFaceLandmarker, watchForBlink } from "../lib/blinkDetector";
 
 const VOTER_ID_PATTERN = /^[A-Z0-9/-]{1,64}$/;
 
@@ -34,6 +35,33 @@ const VoterLogin = () => {
     setStatus({ message, type });
   };
 
+  const captureFixedIntervalFrames = async (
+    video: HTMLVideoElement,
+    canvas: HTMLCanvasElement,
+  ): Promise<string[]> => {
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error(
+        "The browser could not prepare the camera capture. Please try again.",
+      );
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const frames: string[] = [];
+    const maxFrames = 6;
+    const frameDelayMs = 100;
+    for (let index = 0; index < maxFrames; index += 1) {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      frames.push(canvas.toDataURL("image/jpeg", 0.6));
+      if (index < maxFrames - 1) {
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, frameDelayMs),
+        );
+      }
+    }
+    return frames;
+  };
+
   const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
     const pastedText = event.clipboardData.getData("text").trim().toUpperCase();
     if (!VOTER_ID_PATTERN.test(pastedText)) {
@@ -60,8 +88,8 @@ const VoterLogin = () => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 640 },
+          height: { ideal: 480 },
         },
         audio: false,
       });
@@ -71,6 +99,9 @@ const VoterLogin = () => {
         await videoRef.current.play().catch(() => undefined);
       }
       setIsCameraActive(true);
+      getFaceLandmarker().catch((error) => {
+        console.warn("Blink-detection model failed to preload:", error);
+      });
       updateStatus(
         "Camera active. Center your face, then verify your identity.",
         "success",
@@ -122,20 +153,29 @@ const VoterLogin = () => {
     }
 
     setIsProcessing(true);
-    updateStatus("Recording liveness data… Please blink naturally.");
+    updateStatus("Watching for a natural blink…");
 
     try {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const frames: string[] = [];
-      const maxFrames = 10;
-
-      for (let index = 0; index < maxFrames; index += 1) {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        frames.push(canvas.toDataURL("image/jpeg", 0.7));
-        if (index < maxFrames - 1) {
-          await new Promise((resolve) => window.setTimeout(resolve, 150));
+      let frames: string[];
+      try {
+        const result = await watchForBlink(video, canvas, {
+          timeoutMs: 6000,
+          jpegQuality: 0.6,
+          onStatus: (message) => updateStatus(message),
+        });
+        frames = result.frames;
+        if (!result.blinkConfirmed) {
+          updateStatus(
+            "No blink detected yet… verifying with what we captured…",
+          );
         }
+      } catch (error) {
+        console.warn(
+          "Real-time blink detection unavailable, using fallback capture:",
+          error,
+        );
+        updateStatus("Recording liveness data… Please blink naturally.");
+        frames = await captureFixedIntervalFrames(video, canvas);
       }
 
       updateStatus("Verifying identity securely…");
@@ -172,7 +212,10 @@ const VoterLogin = () => {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setIsCameraActive(false);
-      updateStatus("Identity verified. Checking eligibility and preparing your private voting session…", "success");
+      updateStatus(
+        "Identity verified. Checking eligibility and preparing your private voting session…",
+        "success",
+      );
       navigate("/voting");
     } catch (error) {
       console.error("Verification error:", error);

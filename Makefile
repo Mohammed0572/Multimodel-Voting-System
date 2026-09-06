@@ -59,7 +59,7 @@ install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
 	@node scripts/install-tesseract.mjs
 
-dev: install-tesseract frontend
+dev: install-node install-tesseract frontend
 
 compile:
 	@echo "[*] Compiling Solidity smart contracts..."

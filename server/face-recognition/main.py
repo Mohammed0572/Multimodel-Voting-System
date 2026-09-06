@@ -29,6 +29,8 @@ import pickle
 import sqlite3
 import logging
 import re
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -67,6 +69,8 @@ SECRET_KEY: str = settings.resolved_secret_key
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
 _CREDENTIAL_COOKIE = "voting_credential"
 _CREDENTIAL_MAX_AGE = settings.VOTING_CREDENTIAL_TTL_MINUTES * 60
+
+_cv_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="face-cv")
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -472,7 +476,10 @@ def get_enrollment_embedding(images_base64: list[str]) -> np.ndarray:
     return _average_encodings(embeddings)
 
 
-def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
+def get_face_details(
+    image: np.ndarray,
+    need_encoding: bool = True,
+) -> Optional[tuple[Optional[np.ndarray], dict]]:
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     height, width = rgb.shape[:2]
@@ -500,15 +507,18 @@ def get_face_details(image: np.ndarray) -> Optional[tuple[np.ndarray, dict]]:
         tuple(int(coord / detection_scale) for coord in loc) for loc in face_locations
     ]
 
-    encodings = face_recognition.face_encodings(rgb, scaled_locations)
-    if not encodings:
-        return None
-
     landmarks = face_recognition.face_landmarks(rgb, scaled_locations)
     if not landmarks:
         return None
 
-    return encodings[0], landmarks[0]
+    encoding: Optional[np.ndarray] = None
+    if need_encoding:
+        encodings = face_recognition.face_encodings(rgb, scaled_locations)
+        if not encodings:
+            return None
+        encoding = encodings[0]
+
+    return encoding, landmarks[0]
 
 
 def calculate_ear(eye_points: list) -> float:
@@ -922,32 +932,58 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
             detail="Liveness detection requires a sequence of images (at least 2).",
         )
 
-    # Decode images and extract face details
-    frame_details = []
-    for img_b64 in payload.images_base64:
+    def process_frame(image_base64: str):
         try:
-            image = decode_base64_image(img_b64)
+            image = decode_base64_image(image_base64)
         except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid image in sequence: {exc}",
-            )
+            ) from exc
+        return image, get_face_details(image, need_encoding=False)
 
-        details = get_face_details(image)
-        if details is not None:
-            frame_details.append(details)
+    loop = asyncio.get_running_loop()
+    processed_frames = await asyncio.gather(
+        *[
+            loop.run_in_executor(_cv_executor, process_frame, image_base64)
+            for image_base64 in payload.images_base64
+        ]
+    )
+    usable_frames = [
+        (index, image, details)
+        for index, (image, details) in enumerate(processed_frames)
+        if details is not None
+    ]
 
-    if not frame_details:
+    if not usable_frames:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No faces detected in the provided image sequence.",
         )
 
-    base_embedding = frame_details[0][0]
+    encoding_indexes = {usable_frames[0][0], usable_frames[-1][0]}
+    encoding_jobs = [
+        loop.run_in_executor(_cv_executor, get_face_details, image, True)
+        for index, image, _ in usable_frames
+        if index in encoding_indexes
+    ]
+    encoded_frames = [
+        details
+        for details in await asyncio.gather(*encoding_jobs)
+        if details is not None and details[0] is not None
+    ]
+
+    if not encoded_frames:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not get a clear face reading. Please try again.",
+        )
+
+    base_embedding = encoded_frames[0][0]
 
     # Consistency check + EAR collection across frames
     ears = []
-    for emb, landmarks in frame_details:
+    for emb, landmarks in encoded_frames:
         match, _ = compare_faces(base_embedding, emb, tolerance=0.4)
         if not match:
             raise HTTPException(
@@ -955,6 +991,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
                 detail="Multiple different faces or inconsistent face detected across frames.",
             )
 
+    for _, _, (_, landmarks) in usable_frames:
         if "left_eye" in landmarks and "right_eye" in landmarks:
             left_ear = calculate_ear(landmarks["left_eye"])
             right_ear = calculate_ear(landmarks["right_eye"])
