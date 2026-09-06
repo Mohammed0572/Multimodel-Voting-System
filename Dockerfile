@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+COPY scripts/copy-mediapipe-assets.mjs ./scripts/copy-mediapipe-assets.mjs
 
 # Install dependencies
 RUN pnpm install
