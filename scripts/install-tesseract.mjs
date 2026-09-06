@@ -50,7 +50,28 @@ function findTesseractBinary() {
       ),
     ];
 
-    // Package-managed installs may use a different directory than the common defaults.
+    // 2a. Direct registry check for Tesseract-OCR installation directory
+    const regKeys = [
+      "HKLM\\SOFTWARE\\Tesseract-OCR",
+      "HKLM\\SOFTWARE\\WOW6432Node\\Tesseract-OCR",
+      "HKCU\\Software\\Tesseract-OCR",
+    ];
+    for (const regKey of regKeys) {
+      try {
+        const out = execSync(`reg query "${regKey}" /v InstallDir`, {
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"],
+        });
+        const match = out.match(/InstallDir\s+REG_SZ\s+(.+)/i);
+        if (match && match[1]) {
+          commonWinPaths.unshift(path.join(match[1].trim(), "tesseract.exe"));
+        }
+      } catch {
+        // Continue to other keys
+      }
+    }
+
+    // 2b. Package-managed installs may use a different directory
     try {
       const registryOutput = execSync(
         'reg query "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall" /s /v InstallLocation',
@@ -90,6 +111,7 @@ function findTesseractBinary() {
 }
 
 function installTesseract() {
+  console.log("[*] Verifying Tesseract OCR (Note: frontend uses in-browser WASM tesseract.js)...");
   const result = findTesseractBinary();
 
   if (result.installed) {
@@ -111,10 +133,13 @@ function installTesseract() {
         "winget install --id UB-Mannheim.TesseractOCR --accept-source-agreements --accept-package-agreements",
         { stdio: "inherit" },
       );
-      console.log("[+] Tesseract OCR installed successfully via winget.");
-      console.log(
-        "[!] Note: You may need to restart your terminal for PATH changes to take full effect.",
-      );
+      console.log("[+] Tesseract OCR installation finished via winget.");
+      const postCheck = findTesseractBinary();
+      if (postCheck.installed) {
+        console.log(`[+] Verified installation: ${postCheck.version} at ${postCheck.location}`);
+      } else {
+        console.log("[!] Note: Please restart your terminal for PATH changes to take effect.");
+      }
       return;
     } catch {
       console.log(
@@ -125,9 +150,12 @@ function installTesseract() {
     try {
       execSync("choco install tesseract -y", { stdio: "inherit" });
       console.log("[+] Tesseract OCR installed successfully via choco.");
-      console.log(
-        "[!] Note: You may need to restart your terminal for PATH changes to take full effect.",
-      );
+      const postCheck = findTesseractBinary();
+      if (postCheck.installed) {
+        console.log(`[+] Verified installation: ${postCheck.version} at ${postCheck.location}`);
+      } else {
+        console.log("[!] Note: Please restart your terminal for PATH changes to take effect.");
+      }
       return;
     } catch {
       console.error(
