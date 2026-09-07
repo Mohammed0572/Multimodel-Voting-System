@@ -32,7 +32,7 @@ help:
 	@echo "  make migrate           - Deploy smart contracts to local Ganache"
 	@echo "  make backend           - Start FastAPI face recognition backend"
 	@echo "  make frontend          - Start Vite React frontend"
-	@echo "  make dev               - Install node dependencies & start frontend"
+	@echo "  make dev               - Install node dependencies & start full local stack"
 	@echo "  make build             - Build the frontend for production"
 	@echo "  make lint              - Run linter (ESLint)"
 	@echo "  make test              - Run all tests (frontend, backend, contracts)"
@@ -59,7 +59,8 @@ install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
 	@node scripts/install-tesseract.mjs
 
-dev: install-node frontend
+dev: install-node
+	@node scripts/start-demo.mjs
 
 compile:
 	@echo "[*] Compiling Solidity smart contracts..."
@@ -75,7 +76,7 @@ migrate:
 
 backend:
 	@echo "[*] Starting FastAPI face recognition backend on http://127.0.0.1:8000..."
-	$(BACKEND_PY) -m uvicorn --app-dir server/face-recognition main:app --host 127.0.0.1 --port 8000 --reload
+	$(BACKEND_PY) -m uvicorn --app-dir server/face-recognition main:app --host 127.0.0.1 --port 8000
 
 frontend:
 	@echo "[*] Starting Vite React frontend..."

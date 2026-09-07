@@ -248,7 +248,10 @@ const Registration = () => {
     setBranch("");
     setValidity("");
     setDob("");
-    updateStatus("Enter the voter's details manually. Use the registered USN to continue.", "info");
+    updateStatus(
+      "Enter the voter's details manually. Use the registered USN to continue.",
+      "info",
+    );
     setStep(2);
   };
 
@@ -331,7 +334,11 @@ const Registration = () => {
       setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
       updateStatus(
-        error instanceof Error ? error.message : "Error occurred.",
+        error instanceof TypeError && error.message === "Failed to fetch"
+          ? `Registration service unavailable at ${API_BASE}. Start the FastAPI backend and try again.`
+          : error instanceof Error
+            ? error.message
+            : "Error occurred.",
         "error",
       );
     } finally {

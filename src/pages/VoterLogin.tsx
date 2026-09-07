@@ -221,7 +221,9 @@ const VoterLogin = () => {
       console.error("Verification error:", error);
       updateStatus(
         error instanceof Error
-          ? error.message
+          ? error.message === "Failed to fetch"
+            ? `Authentication service unavailable at ${API_BASE}. Start the FastAPI backend and try again.`
+            : error.message
           : "Network error. Please check the authentication service.",
         "error",
       );

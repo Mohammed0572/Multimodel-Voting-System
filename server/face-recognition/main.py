@@ -69,6 +69,9 @@ SECRET_KEY: str = settings.resolved_secret_key
 JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
 _CREDENTIAL_COOKIE = "voting_credential"
 _CREDENTIAL_MAX_AGE = settings.VOTING_CREDENTIAL_TTL_MINUTES * 60
+_LOCAL_GANACHE_RELAYER_KEY = (
+    "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d"
+)
 
 _cv_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="face-cv")
 
@@ -277,9 +280,29 @@ def _credential_hash_from_cookie(credential: str) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _relayer_configuration() -> tuple[str, str]:
+    contract_address = settings.BLOCKCHAIN_CONTRACT_ADDRESS
+    private_key = settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY
+    rpc_host = settings.BLOCKCHAIN_RPC_URL.replace("http://", "").replace("https://", "").split(":", 1)[0]
+
+    if rpc_host in {"127.0.0.1", "localhost"}:
+        if not contract_address:
+            artifact_path = Path(__file__).resolve().parents[2] / "src" / "contracts" / "Voting.json"
+            try:
+                artifact = json.loads(artifact_path.read_text())
+                contract_address = artifact.get("networks", {}).get("1337", {}).get("address", "")
+            except (OSError, json.JSONDecodeError):
+                contract_address = ""
+        if not private_key:
+            private_key = _LOCAL_GANACHE_RELAYER_KEY
+
+    return contract_address, private_key
+
+
 def relay_vote(candidate_id: int, credential: bytes) -> str:
     """Submit the opaque credential using the configured relayer account."""
-    if not settings.BLOCKCHAIN_CONTRACT_ADDRESS or not settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY:
+    contract_address, private_key = _relayer_configuration()
+    if not contract_address or not private_key:
         raise HTTPException(status_code=503, detail="Voting relayer is not configured.")
     web3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_RPC_URL))
     if not web3.is_connected():
@@ -287,8 +310,8 @@ def relay_vote(candidate_id: int, credential: bytes) -> str:
     abi = [
         {"inputs": [{"internalType": "uint256", "name": "candidateID", "type": "uint256"}, {"internalType": "bytes32", "name": "credential", "type": "bytes32"}], "name": "vote", "outputs": [], "stateMutability": "nonpayable", "type": "function"},
     ]
-    contract = web3.eth.contract(address=Web3.to_checksum_address(settings.BLOCKCHAIN_CONTRACT_ADDRESS), abi=abi)
-    account = web3.eth.account.from_key(settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY)
+    contract = web3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi)
+    account = web3.eth.account.from_key(private_key)
     nonce = web3.eth.get_transaction_count(account.address, "pending")
     tx = contract.functions.vote(candidate_id, Web3.keccak(credential)).build_transaction({
         "from": account.address,

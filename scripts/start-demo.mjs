@@ -130,9 +130,16 @@ function waitForPort(port, host = "127.0.0.1", timeoutMs = 45000) {
           );
         } else {
           const elapsedSec = Math.floor(elapsed / 1000);
-          if (elapsedSec >= 4 && elapsedSec !== lastLoggedSec && elapsedSec % 4 === 0) {
+          if (
+            elapsedSec >= 4 &&
+            elapsedSec !== lastLoggedSec &&
+            elapsedSec % 4 === 0
+          ) {
             lastLoggedSec = elapsedSec;
-            log(prefix.system, `Still waiting for port ${port} (${elapsedSec}s elapsed)...`);
+            log(
+              prefix.system,
+              `Still waiting for port ${port} (${elapsedSec}s elapsed)...`,
+            );
           }
           setTimeout(check, 300);
         }
@@ -145,6 +152,51 @@ function waitForPort(port, host = "127.0.0.1", timeoutMs = 45000) {
     };
 
     check();
+  });
+}
+
+function waitForHttp(url, timeoutMs = 45000) {
+  const startTime = Date.now();
+  let lastLoggedSec = 0;
+
+  return new Promise((resolve, reject) => {
+    const check = async () => {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          resolve();
+          return;
+        }
+      } catch (_) {
+        // The service may still be completing application startup.
+      }
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed > timeoutMs) {
+        reject(
+          new Error(
+            `Timeout waiting for ${url} after ${Math.round(timeoutMs / 1000)}s.`,
+          ),
+        );
+        return;
+      }
+
+      const elapsedSec = Math.floor(elapsed / 1000);
+      if (
+        elapsedSec >= 4 &&
+        elapsedSec !== lastLoggedSec &&
+        elapsedSec % 4 === 0
+      ) {
+        lastLoggedSec = elapsedSec;
+        log(
+          prefix.system,
+          `Still waiting for ${url} (${elapsedSec}s elapsed)...`,
+        );
+      }
+      setTimeout(check, 300);
+    };
+
+    void check();
   });
 }
 
@@ -237,7 +289,10 @@ async function main() {
   // 2. Run Truffle Migrate
   log(prefix.system, "Deploying smart contracts to Ganache...");
   try {
-    const truffleCli = resolveCli("truffle", path.join("build", "cli.bundled.js"));
+    const truffleCli = resolveCli(
+      "truffle",
+      path.join("build", "cli.bundled.js"),
+    );
     await runCommand(
       truffleCli.command,
       [
@@ -289,11 +344,12 @@ async function main() {
       "-m",
       "uvicorn",
       "main:app",
+      "--app-dir",
+      path.join(rootDir, "server", "face-recognition"),
       "--host",
       "127.0.0.1",
       "--port",
       "8000",
-      "--reload",
     ],
     {
       cwd: path.join(rootDir, "server", "face-recognition"),
@@ -308,6 +364,33 @@ async function main() {
   );
   activeProcesses.push(backendProc);
   pipeOutput(backendProc, prefix.backend);
+  backendProc.once("error", (error) => {
+    log(
+      prefix.backend,
+      `${colors.red}Process error: ${error.message}${colors.reset}`,
+    );
+  });
+  backendProc.once("close", (code, signal) => {
+    if (code !== null && code !== 0) {
+      log(
+        prefix.backend,
+        `${colors.red}Backend exited with code ${code}${signal ? ` (${signal})` : ""}.${colors.reset}`,
+      );
+    }
+  });
+
+  log(prefix.system, "Waiting for FastAPI health check...");
+  try {
+    await waitForHttp("http://127.0.0.1:8000/health");
+    log(prefix.system, "FastAPI backend is ready!");
+  } catch (err) {
+    log(
+      prefix.system,
+      `${colors.red}FastAPI backend failed to start: ${err.message}${colors.reset}`,
+    );
+    cleanup();
+    process.exit(1);
+  }
 
   // 4. Start Frontend
   log(prefix.system, "Starting Vite React frontend...");

@@ -239,7 +239,17 @@ npm run build
 npm run serve
 ```
 
-### 7. Run the Servers
+### 7. Run the Local Stack
+
+For local development, start everything with one command. This starts Ganache,
+deploys the voting contract, configures the voting relayer, and starts both the
+FastAPI and frontend servers:
+
+```bash
+make dev
+```
+
+For manual server startup:
 
 You need to run two servers simultaneously in separate terminals:
 
@@ -247,7 +257,7 @@ You need to run two servers simultaneously in separate terminals:
 
 ```bash
 cd server/face-recognition
-python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
 **Terminal 2: Start the Frontend Server**
