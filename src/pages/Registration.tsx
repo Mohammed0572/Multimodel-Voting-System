@@ -37,15 +37,15 @@ export function extractFields(text: string) {
     if (!extracted.usn) {
       const usnMatch =
         line.match(
-          /(?:USN|Student\s*ID|Voter\s*ID)\s*(?:No\.?|Number)?\s*[:\-]?\s*([1][A-Z0-9]{9,})/i,
+          /(?:USN|Student\s*ID|Voter\s*ID)\s*(?:No\.?|Number)?\s*[:-]?\s*([1][A-Z0-9]{9,})/i,
         ) ?? line.match(/\b([1][A-Z0-9]{9,})\b/);
       if (usnMatch) extracted.usn = usnMatch[1].toUpperCase();
     }
 
     if (!extracted.branch) {
       const branchValue = captureValue(line, [
-        /(?:Branch|Department|Program)\s*[:\-]?\s*([A-Za-z0-9&/\s.-]+?)(?=\s*(?:Validity|Valid|Expiry|Date\s*of\s*Birth|DOB|USN|Name)\b|$)/i,
-        /(?:Branch|Department|Program)\s*[:\-]?\s*([A-Za-z0-9&/\s.-]+)/i,
+        /(?:Branch|Department|Program)\s*[:-]?\s*([A-Za-z0-9&/\s.-]+?)(?=\s*(?:Validity|Valid|Expiry|Date\s*of\s*Birth|DOB|USN|Name)\b|$)/i,
+        /(?:Branch|Department|Program)\s*[:-]?\s*([A-Za-z0-9&/\s.-]+)/i,
       ]);
       if (branchValue)
         extracted.branch = branchValue.replace(/\s+/g, " ").trim();
@@ -53,22 +53,22 @@ export function extractFields(text: string) {
 
     if (!extracted.validity) {
       const validityValue = captureValue(line, [
-        /(?:Validity|Valid\s*Till|Expiry|Valid\s*Up\s*To)\s*[:\-]?\s*(\d{4}(?:\s*[-–]\s*\d{4})?|\d{2}[/-]\d{2}[/-]\d{4})/i,
-        /(?:Validity|Valid\s*Till|Expiry)\s*[:\-]?\s*(\d{4})/i,
+        /(?:Validity|Valid\s*Till|Expiry|Valid\s*Up\s*To)\s*[:-]?\s*(\d{4}(?:\s*[-–]\s*\d{4})?|\d{2}[/-]\d{2}[/-]\d{4})/i,
+        /(?:Validity|Valid\s*Till|Expiry)\s*[:-]?\s*(\d{4})/i,
       ]);
       if (validityValue) extracted.validity = validityValue.trim();
     }
 
     if (!extracted.dob) {
       const dobMatch = line.match(
-        /(?:Date\s*of\s*Birth|DOB)\s*[:\-]?\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
+        /(?:Date\s*of\s*Birth|DOB)\s*[:-]?\s*(\d{2}[-/]\d{2}[-/]\d{4})/i,
       );
       if (dobMatch) extracted.dob = dobMatch[1].trim();
     }
 
     if (!extracted.name) {
       const nameMatch = line.match(
-        /(?:Name|Student\s*Name)\s*[:\-]?\s*([A-Z][A-Za-z'&.-]+(?:\s+[A-Z][A-Za-z'&.-]+){1,4})/,
+        /(?:Name|Student\s*Name)\s*[:-]?\s*([A-Z][A-Za-z'&.-]+(?:\s+[A-Z][A-Za-z'&.-]+){1,4})/,
       );
       if (nameMatch) extracted.name = nameMatch[1].replace(/\s+/g, " ").trim();
     }

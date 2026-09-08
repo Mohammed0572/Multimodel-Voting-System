@@ -14,6 +14,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { API_BASE, useAuth } from "../context/AuthContext";
+import { castVote } from "../services/api";
 
 interface Candidate {
   id: number;
@@ -61,6 +62,9 @@ const Voting = () => {
   const [credentialReady, setCredentialReady] = useState(false);
   const [isCheckingEligibility, setIsCheckingEligibility] =
     useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voteError, setVoteError] = useState<string | null>(null);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
 
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
@@ -83,20 +87,35 @@ const Voting = () => {
       setHasVoted(eligibilityData.voted);
       setCredentialReady(eligibilityData.credential_ready);
       setTxHash(eligibilityData.tx_hash || "");
+      if (eligibilityData.tx_hash) {
+        setTransactionHash(eligibilityData.tx_hash);
+      }
       setIsCheckingEligibility(false);
 
-      const stateResult = await contract.getElectionState();
-      setElectionState(stateResult.toNumber());
+      if (!contract) return;
 
-      const count = await contract.getCountCandidates();
+      const stateResult = await contract.getElectionState();
+      setElectionState(
+        typeof stateResult.toNumber === "function"
+          ? stateResult.toNumber()
+          : Number(stateResult),
+      );
+
+      const countRaw = contract.countCandidates
+        ? await contract.countCandidates()
+        : await contract.getCountCandidates();
+      const count =
+        typeof countRaw.toNumber === "function"
+          ? countRaw.toNumber()
+          : Number(countRaw);
       const candidatesArray = [];
-      for (let i = 1; i <= count.toNumber(); i++) {
+      for (let i = 1; i <= count; i++) {
         const data = await contract.getCandidate(i);
         candidatesArray.push({
-          id: data[0].toNumber(),
+          id: typeof data[0].toNumber === "function" ? data[0].toNumber() : Number(data[0]),
           name: data[1],
           party: data[2],
-          voteCount: data[3].toNumber(),
+          voteCount: typeof data[3].toNumber === "function" ? data[3].toNumber() : Number(data[3]),
           color: COLORS[(i - 1) % COLORS.length],
           symbol: SYMBOLS[(i - 1) % SYMBOLS.length],
         });
@@ -128,9 +147,9 @@ const Voting = () => {
   };
 
   const handleVote = async () => {
-    if (stage !== "review" || hasVoted || !selectedCandidateId) return;
+    if (stage !== "review" || hasVoted || !selectedCandidateId || isSubmitting || transactionHash) return;
     if (!credentialReady) {
-      alert(
+      setVoteError(
         "Your secure voting session is not ready. Please authenticate again.",
       );
       return;
@@ -138,31 +157,21 @@ const Voting = () => {
 
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
-      alert(
+      setVoteError(
         "Your authenticated voter identity is missing. Please sign in again.",
       );
       return;
     }
 
+    setIsSubmitting(true);
+    setVoteError(null);
     setStage("sealing");
 
     try {
-      const response = await fetch(`${API_BASE}/voter/cast`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidate_id: selectedCandidateId }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail ||
-            "The private voting credential could not be consumed.",
-        );
-      }
-      const result = await response.json();
-      const submittedHash = result.tx_hash || "";
+      const result = await castVote(selectedCandidateId);
+      const submittedHash = result.transaction_hash || result.tx_hash || "";
       setTxHash(submittedHash);
+      setTransactionHash(submittedHash);
       setReceiptCandidate(chosen || null);
       setHasVoted(true);
       setCredentialReady(false);
@@ -170,12 +179,14 @@ const Voting = () => {
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
-      alert(
+      const message =
         error instanceof Error
           ? error.message
-          : "The ballot was not recorded. Please try again.",
-      );
+          : "The ballot was not recorded. Please try again.";
+      setVoteError(message);
       setStage("review");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -528,11 +539,34 @@ const Voting = () => {
                       </button>
                       <button
                         type="button"
+                        disabled={!chosen || isSubmitting || Boolean(transactionHash)}
                         onClick={handleVote}
-                        className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90"
+                        aria-busy={isSubmitting}
+                        className="inline-flex items-center gap-2 rounded-md bg-saffron px-4 py-2 text-sm font-semibold text-paper hover:bg-saffron/90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Confirm and seal <ArrowRight className="size-4" />
+                        {isSubmitting ? "Submitting vote..." : "Confirm and seal"}{" "}
+                        {!isSubmitting && <ArrowRight className="size-4" />}
                       </button>
+                    </div>
+                    <div aria-live="polite" className="mt-4 text-sm space-y-1">
+                      {isSubmitting && (
+                        <p className="text-amber-700">
+                          Submitting your encrypted voting credential to the blockchain...
+                        </p>
+                      )}
+
+                      {voteError && (
+                        <p role="alert" className="text-red-700 font-medium">
+                          {voteError}
+                        </p>
+                      )}
+
+                      {transactionHash && (
+                        <p className="text-emerald-700 font-medium">
+                          Vote recorded. Transaction:{" "}
+                          <code className="bg-emerald-50 px-1.5 py-0.5 rounded font-mono text-xs text-ink">{transactionHash}</code>
+                        </p>
+                      )}
                     </div>
                   </section>
                 )}

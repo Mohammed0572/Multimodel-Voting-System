@@ -11,6 +11,8 @@ import Web3 from "web3";
 import TruffleContract from "@truffle/contract";
 import votingArtifacts from "../contracts/Voting.json";
 
+import { isValidContractAddress, normalizeChainId } from "../utils/blockchain";
+
 declare global {
   interface Window {
     ethereum?: {
@@ -45,6 +47,23 @@ export const useWeb3 = () => {
   }
   return context;
 };
+
+export async function requireContractOwner(contract: any, account: string) {
+  if (!contract || !account) {
+    throw new Error("Contract or account is unavailable.");
+  }
+  const ownerMethod = contract.methods?.owner
+    ? contract.methods.owner().call
+    : contract.owner;
+  const owner =
+    typeof ownerMethod === "function"
+      ? await ownerMethod()
+      : await contract.owner();
+
+  if (owner.toLowerCase() !== account.toLowerCase()) {
+    throw new Error("Connected wallet is not the election contract owner.");
+  }
+}
 
 export const Web3Provider = ({ children }: { children: ReactNode }) => {
   const [web3, setWeb3] = useState<Web3 | null>(null);
@@ -89,22 +108,25 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
 
     const initWeb3 = async () => {
       try {
-        const VOTING_CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS;
+        const configuredAddress = import.meta.env.VITE_CONTRACT_ADDRESS;
         if (!window.ethereum) {
           throw new Error(
             "MetaMask is required to connect to the voting network.",
           );
         }
 
-        // Read existing permissions silently. A wallet popup should only appear
-        // when a protected flow explicitly calls connectWallet().
         const currentWeb3 = new Web3(window.ethereum as any);
-        const expectedChainId = Number(import.meta.env.VITE_NETWORK_ID || 1337);
-        const chainId = await currentWeb3.eth.getChainId();
+        const expectedChainId = normalizeChainId(
+          import.meta.env.VITE_NETWORK_ID ||
+            import.meta.env.VITE_CHAIN_ID ||
+            1337,
+        );
+        const rawChainId = await currentWeb3.eth.getChainId();
+        const chainId = normalizeChainId(rawChainId);
         const isGanache =
           (expectedChainId === 5777 || expectedChainId === 1337) &&
-          (Number(chainId) === 1337 || Number(chainId) === 5777);
-        if (Number(chainId) !== expectedChainId && !isGanache) {
+          (chainId === 1337 || chainId === 5777);
+        if (chainId !== expectedChainId && !isGanache) {
           throw new Error(
             `Wrong blockchain network. Expected chain ID ${expectedChainId}, received ${chainId}.`,
           );
@@ -117,11 +139,31 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           VotingContract.defaults({ from: accounts[0] });
         }
 
-        const instance =
-          VOTING_CONTRACT_ADDRESS &&
-          VOTING_CONTRACT_ADDRESS !== "0xYOUR_CONTRACT_ADDRESS_HERE"
-            ? await VotingContract.at(VOTING_CONTRACT_ADDRESS)
-            : await VotingContract.deployed();
+        let instance: any = null;
+        if (isValidContractAddress(configuredAddress)) {
+          instance = await VotingContract.at(configuredAddress);
+        } else {
+          const networkId = await currentWeb3.eth.net.getId();
+          const deployedNetworks = votingArtifacts.networks as Record<
+            string,
+            { address?: string }
+          >;
+          const deployedNetwork = deployedNetworks?.[String(networkId)];
+          if (
+            deployedNetwork &&
+            isValidContractAddress(deployedNetwork.address)
+          ) {
+            instance = await VotingContract.at(deployedNetwork.address);
+          } else {
+            try {
+              instance = await VotingContract.deployed();
+            } catch {
+              throw new Error(
+                `Voting contract is not deployed on network ${networkId}.`,
+              );
+            }
+          }
+        }
 
         if (!cancelled) {
           setWeb3(currentWeb3);

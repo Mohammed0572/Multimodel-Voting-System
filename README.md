@@ -12,13 +12,15 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Web-lightgrey.svg)
 
-This project is a highly secure, transparent, and tamper-proof voting system built on the Ethereum blockchain. By integrating advanced facial recognition technology with decentralized smart contracts, the system ensures that elections are fair, verifiable, and completely immune to voter fraud or manipulation.
+This project is an academic prototype that combines biometric authentication, server-side eligibility checks, and tamper-evident blockchain vote recording.
+
+The blockchain protects accepted vote transactions from ordinary modification. The authentication service, voter registry, credential issuance process, and transaction relayer remain centralized trusted components. The system is not a production election protocol and does not provide cryptographic anonymity, coercion resistance, or complete protection against malicious administrators.
 
 ## Deployed Contract
 
-Network: Ethereum Sepolia Testnet
-Contract Address: `0xYOUR_CONTRACT_ADDRESS_HERE`
-Etherscan: https://sepolia.etherscan.io/address/0xYOUR_CONTRACT_ADDRESS_HERE
+Network: Configure the deployment network locally or through environment variables.
+Contract Address: Set `VITE_CONTRACT_ADDRESS` after deployment.
+Etherscan: Add the deployed address only after a real Sepolia deployment.
 
 ### Dashboard Overview
 
@@ -61,8 +63,8 @@ Once inside the secure voting dashboard:
 
 - The voter is presented with the list of participating candidates.
 - The voter makes their selection and casts their vote.
-- The vote is transmitted directly to a **Smart Contract** deployed on the Ethereum blockchain.
-- The Smart Contract independently verifies that the voter has not already voted.
+- The vote is submitted to the FastAPI service, which relays it to a **Smart Contract** deployed on the Ethereum blockchain.
+- The Smart Contract verifies that the relayer credential has not already been used.
 - Once verified, the vote is permanently recorded on the blockchain ledger.
 
 ### 4. Election Management (Admin Dashboard)
@@ -77,9 +79,9 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ## Core Security Features
 
-- **Facial Recognition Authentication:** You cannot vote using someone else's credentials. The system uses facial recognition to match the voter. _(Note: Active liveness detection/anti-spoofing is currently out of scope for this prototype)._
-- **Immutability:** Because votes are stored on the Ethereum blockchain, they cannot be deleted, modified, or tampered with by anyone—not even the administrators.
-- **No Single Point of Failure:** Unlike traditional centralized databases that can be hacked to alter vote counts, the decentralized nature of the blockchain ensures the voting data is distributed and secure.
+- **Facial Recognition Authentication:** The system uses facial recognition, image-quality checks, and challenge-response liveness as prototype authentication controls. These controls are not production-grade anti-spoofing.
+- **Tamper-evident recording:** Accepted vote transactions are recorded on Ethereum and are resistant to ordinary modification after confirmation.
+- **Trusted services:** Authentication, voter eligibility, credential issuance, and transaction relaying remain centralized and can deny service or submit incorrect data if compromised.
 - **Double-Voting Prevention:** The smart contract logic strictly enforces the rule that one person gets exactly one vote. Any attempt to vote twice is automatically rejected by the blockchain network.
 
 ---
