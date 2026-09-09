@@ -79,10 +79,83 @@ Administrators have access to a separate, secure dashboard where they can:
 
 ## Core Security Features
 
-- **Facial Recognition Authentication:** The system uses facial recognition, image-quality checks, and challenge-response liveness as prototype authentication controls. These controls are not production-grade anti-spoofing.
+- **Facial Recognition Authentication:** The system uses facial recognition, image-quality checks, and passive blink-based liveness detection as prototype authentication controls. These controls are not production-grade anti-spoofing.
 - **Tamper-evident recording:** Accepted vote transactions are recorded on Ethereum and are resistant to ordinary modification after confirmation.
 - **Trusted services:** Authentication, voter eligibility, credential issuance, and transaction relaying remain centralized and can deny service or submit incorrect data if compromised.
 - **Double-Voting Prevention:** The smart contract logic strictly enforces the rule that one person gets exactly one vote. Any attempt to vote twice is automatically rejected by the blockchain network.
+
+### Liveness Detection (Blink-Based)
+
+To reduce the risk of a static photo being used to spoof face
+authentication, the verification flow includes a lightweight
+passive-liveness check based on eye blink detection.
+
+**How it works:**
+
+- During the live face-scan sequence, facial landmarks are extracted
+  for each frame using the existing `face_recognition` / `dlib`
+  landmark pipeline (already in use for face matching).
+- The Eye Aspect Ratio (EAR) is computed per frame from the eye
+  landmark points:
+
+EAR = (‖p2 - p6‖ + ‖p3 - p5‖) / (2 \* ‖p1 - p4‖)
+
+where `p1..p6` are the six landmark points around one eye.
+
+- A natural blink produces a brief drop in EAR below a threshold
+  (commonly ~0.2) followed by a recovery. The verification sequence
+  requires **at least one such drop-and-recover pattern** across the
+  captured frames before the face match is accepted.
+- If no blink pattern is detected across the capture window, the
+  request is rejected with a "liveness check failed — please blink
+  naturally and try again" message, and the user can retry.
+
+**Scope and limitations:**
+
+- This is a **passive, single-signal liveness check** — it blocks the
+  simplest spoofing attempt (a static printed photo or a still image)
+  but is not a full anti-spoofing solution (e.g. it would not reliably
+  detect a video replay of the enrolled voter blinking).
+- No new dependencies are required — EAR computation uses the same
+  landmark points already extracted for face matching.
+
+### Match Threshold Justification
+
+The face-matching system uses a fixed distance threshold
+(`MATCH_TOLERANCE = 0.55`) to decide accept/reject. A full FAR / FRR /
+EER evaluation across a labelled dataset was considered
+(see Issue #125) and explicitly deprioritized for this phase of the
+project. In its place, the threshold was sanity-checked manually
+before being finalized.
+
+**Manual verification performed:**
+
+- A small manual test set was used: known **genuine pairs** (a
+  voter's own enrolled face vs. a fresh live capture) and known
+  **impostor pairs** (a voter's live capture vs. another voter's
+  stored encoding).
+- Each pair was run through the existing
+  `face_recognition.face_distance` pipeline, and the resulting
+  distance was checked against `0.55`:
+  - Genuine pairs consistently returned distances **below** 0.55
+    (correctly accepted).
+  - Impostor pairs consistently returned distances **above** 0.55
+    (correctly rejected).
+- No genuine pair was incorrectly rejected and no impostor pair was
+  incorrectly accepted across this manual sample.
+
+**Scope and limitations:**
+
+- This is a **manual spot-check on a small sample**, not a formal
+  statistical evaluation — it does not produce FAR, FRR, or EER
+  figures, and the sample size is too small to generalize with
+  confidence.
+- `0.55` is retained as a practical value that behaved correctly on
+  the cases tested, not as a value derived from a measured error-rate
+  curve.
+- A full FAR/FRR/EER evaluation (Issue #125) remains the correct next
+  step if stronger, statistically-backed justification is needed in
+  the future.
 
 ---
 
