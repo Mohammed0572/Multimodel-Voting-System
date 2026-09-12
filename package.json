@@ -27,7 +27,7 @@
     "express-rate-limit": "^8.6.2",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.39.0",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.18.1",
     "tesseract.js": "^7.0.0",
