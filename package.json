@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@mediapipe/tasks-vision": "^0.10.22",
+    "@mediapipe/tasks-vision": "^1.0.1",
     "@truffle/contract": "^4.6.31",
     "dotenv": "^16.6.1",
     "envalid": "^8.2.0",
