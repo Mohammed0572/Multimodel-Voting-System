@@ -49,7 +49,7 @@
     "esmify": "^2.1.1",
     "ganache": "^7.9.2",
     "globals": "^17.12.0",
-    "jsdom": "^30.0.1",
+    "jsdom": "^30.1.1",
     "tailwindcss": "^4.3.2",
     "truffle": "^5.11.5",
     "ts-node": "^10.9.2",
