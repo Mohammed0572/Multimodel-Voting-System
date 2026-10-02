@@ -42,6 +42,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](./
 Before creating a bug report, please check existing issues to ensure the problem hasn't already been reported.
 
 When opening an issue, provide:
+
 - A clear and descriptive title.
 - Steps to reproduce the problem.
 - Expected behavior vs. actual behavior.
@@ -51,6 +52,7 @@ When opening an issue, provide:
 ### Suggesting Enhancements
 
 Enhancement suggestions are welcome! Please submit an issue describing:
+
 - The problem you want solved or the feature you'd like added.
 - The proposed solution and potential alternatives.
 - Context on how this benefits users and aligns with the project's goals.
@@ -75,23 +77,26 @@ Make sure you have the following installed on your machine:
 - **pnpm**: Recommended package manager (`npm install -g pnpm`)
 - **Python**: 3.9+ (for the face-recognition backend service)
 - **Git**
-- *(Optional)* **Tesseract OCR**: Required for local OCR processing features.
-- *(Optional)* **Docker & Docker Compose**: For containerized deployment testing.
+- _(Optional)_ **Tesseract OCR**: Required for local OCR processing features.
+- _(Optional)_ **Docker & Docker Compose**: For containerized deployment testing.
 
 ### Installation
 
 1. Clone your fork:
+
    ```bash
    git clone https://github.com/<your-username>/Multimodel-Voting-System.git
    cd Multimodel-Voting-System
    ```
 
 2. Install Node.js dependencies:
+
    ```bash
    pnpm install
    ```
 
 3. Set up the Python virtual environment for the face recognition service:
+
    ```bash
    # On Windows (PowerShell):
    python -m venv server/face-recognition/.venv
@@ -105,6 +110,7 @@ Make sure you have the following installed on your machine:
    ```
 
 Alternatively, if you have `make` installed:
+
 ```bash
 make install
 ```
@@ -154,6 +160,7 @@ All pull requests must pass automated lint checks and existing tests.
 ### Linting & Formatting
 
 Run ESLint before committing:
+
 ```bash
 pnpm lint
 ```
@@ -161,6 +168,7 @@ pnpm lint
 ### Running Tests
 
 - **Frontend unit tests (Vitest)**:
+
   ```bash
   pnpm test
   # Or:
@@ -168,6 +176,7 @@ pnpm lint
   ```
 
 - **Smart contract tests (Truffle)**:
+
   ```bash
   pnpm test:blockchain
   # Or:
@@ -175,6 +184,7 @@ pnpm lint
   ```
 
 - **Backend tests (Pytest)**:
+
   ```bash
   pytest server/face-recognition/tests
   # Or:
@@ -193,6 +203,7 @@ pnpm lint
 ### Branch Naming
 
 Create feature or fix branches branching off `master`:
+
 - `feat/feature-name`
 - `fix/bug-description`
 - `docs/documentation-update`
