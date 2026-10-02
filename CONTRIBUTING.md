@@ -82,10 +82,10 @@ Make sure you have the following installed on your machine:
 
 ### Installation
 
-1. Clone your fork:
+1. Clone the repository (or your fork):
 
    ```bash
-   git clone https://github.com/<your-username>/Multimodel-Voting-System.git
+   git clone https://github.com/Mohammed0572/Multimodel-Voting-System.git
    cd Multimodel-Voting-System
    ```
 
@@ -142,7 +142,9 @@ Review `.env` and fill in necessary keys and configurations (e.g., blockchain RP
   ```
 - **Face Recognition Backend (FastAPI)**:
   ```bash
-  python server/face-recognition/main.py
+  python -m uvicorn --app-dir server/face-recognition main:app --host 127.0.0.1 --port 8000 --reload
+  # Or:
+  make backend
   ```
 - **Run Full Local Stack Demo**:
   ```bash
@@ -186,7 +188,7 @@ pnpm lint
 - **Backend tests (Pytest)**:
 
   ```bash
-  pytest server/face-recognition/tests
+  pytest server/face-recognition
   # Or:
   make test-backend
   ```
