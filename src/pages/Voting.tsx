@@ -10,7 +10,6 @@ import {
   ArrowRight,
   User,
   IdCard,
-  CalendarDays,
   BadgeCheck,
 } from "lucide-react";
 import { API_BASE, useAuth } from "../context/AuthContext";
@@ -224,11 +223,6 @@ const Voting = () => {
       label: "Branch",
       value: session?.branch || "Not available",
       icon: MapPin,
-    },
-    {
-      label: "DOB",
-      value: session?.dob || "Not available",
-      icon: CalendarDays,
     },
     {
       label: "Validity",

@@ -1874,8 +1874,6 @@ async def cast_vote(
 
         transaction_hash = relay_vote(payload.candidate_id, credential)
 
-        conn.execute("BEGIN IMMEDIATE")
-
         updated = conn.execute(
             """
             UPDATE voting_credentials
