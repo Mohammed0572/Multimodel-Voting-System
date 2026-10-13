@@ -362,7 +362,7 @@ def _credential_hash_from_cookie(credential: str) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def _relayer_configuration() -> tuple[str, str]:
+def _relayer_configuration() -> tuple[str, str, str]:
     contract_address = settings.BLOCKCHAIN_CONTRACT_ADDRESS
     relayer_address = settings.BLOCKCHAIN_RELAYER_ADDRESS
     private_key = settings.BLOCKCHAIN_RELAYER_PRIVATE_KEY
@@ -373,17 +373,29 @@ def _relayer_configuration() -> tuple[str, str]:
             detail="Blockchain contract address is not configured.",
         )
 
-    if not relayer_address:
-        raise HTTPException(
-            status_code=503,
-            detail="Blockchain relayer address is not configured.",
-        )
-
     if not private_key:
         raise HTTPException(
             status_code=503,
             detail="Blockchain relayer private key is not configured.",
         )
+
+    if not private_key.startswith("0x") or len(private_key) != 66:
+        raise HTTPException(
+            status_code=503,
+            detail="Blockchain relayer private key is invalid.",
+        )
+
+    if not relayer_address:
+        try:
+            from eth_account import Account
+
+            account = Account.from_key(private_key)
+            relayer_address = account.address
+        except Exception:
+            raise HTTPException(
+                status_code=503,
+                detail="Blockchain relayer address is not configured.",
+            )
 
     if not re.fullmatch(r"0x[a-fA-F0-9]{40}", contract_address):
         raise HTTPException(
@@ -397,17 +409,11 @@ def _relayer_configuration() -> tuple[str, str]:
             detail="Blockchain relayer address is invalid.",
         )
 
-    if not private_key.startswith("0x") or len(private_key) != 66:
-        raise HTTPException(
-            status_code=503,
-            detail="Blockchain relayer private key is invalid.",
-        )
-
-    return contract_address, private_key
+    return contract_address, relayer_address, private_key
 
 
 def relay_vote(candidate_id: int, credential: bytes) -> str:
-    contract_address, private_key = _relayer_configuration()
+    contract_address, relayer_address, private_key = _relayer_configuration()
 
     web3 = Web3(Web3.HTTPProvider(settings.BLOCKCHAIN_RPC_URL))
 
@@ -427,7 +433,7 @@ def relay_vote(candidate_id: int, credential: bytes) -> str:
             detail="Blockchain configuration is invalid.",
         ) from exc
 
-    if account.address.lower() != settings.BLOCKCHAIN_RELAYER_ADDRESS.lower():
+    if account.address.lower() != relayer_address.lower():
         raise HTTPException(
             status_code=503,
             detail="Configured private key does not match relayer address.",
@@ -1167,19 +1173,22 @@ async def auth_refresh(request: Request, response: Response):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
+            "SELECT name, usn, branch, validity, dob, student_name FROM voters WHERE voter_id = ?",
             (voter_id.lower(),),
         )
         row = cursor.fetchone()
 
     new_token = create_jwt(voter_id, role)
 
+    resolved_name = (row["name"] or row["student_name"]) if row else None
+    resolved_usn = (row["usn"] or str(voter_id).upper()) if row else str(voter_id).upper()
+
     res = JSONResponse(
         content={
             "role": role,
             "voter_id": voter_id,
-            "name": row["name"] if row else None,
-            "usn": row["usn"] if row else None,
+            "name": resolved_name,
+            "usn": resolved_usn,
             "branch": row["branch"] if row else None,
             "validity": row["validity"] if row else None,
             "dob": row["dob"] if row else None,
@@ -1414,7 +1423,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT role, face_encoding, name, usn, branch, validity, dob, id_verified FROM voters WHERE voter_id = ?",
+            "SELECT role, face_encoding, name, usn, branch, validity, dob, id_verified, student_name FROM voters WHERE voter_id = ?",
             (voter_id,),
         )
         row = cursor.fetchone()
@@ -1426,8 +1435,8 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         )
 
     role: str = row["role"]
-    profile_name = row["name"]
-    profile_usn = row["usn"]
+    profile_name = row["name"] or row["student_name"]
+    profile_usn = row["usn"] or voter_id.upper()
     profile_branch = row["branch"]
     profile_validity = row["validity"]
     profile_dob = row["dob"]
@@ -1530,16 +1539,19 @@ async def auth_me(request: Request):
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT name, usn, branch, validity, dob FROM voters WHERE voter_id = ?",
+            "SELECT name, usn, branch, validity, dob, student_name FROM voters WHERE voter_id = ?",
             (str(voter_id).lower(),),
         )
         row = cursor.fetchone()
 
+    resolved_name = (row["name"] or row["student_name"]) if row else None
+    resolved_usn = (row["usn"] or str(voter_id).upper()) if row else str(voter_id).upper()
+
     return {
         "voter_id": voter_id,
         "role": payload.get("role"),
-        "name": row["name"] if row else None,
-        "usn": row["usn"] if row else None,
+        "name": resolved_name,
+        "usn": resolved_usn,
         "branch": row["branch"] if row else None,
         "validity": row["validity"] if row else None,
         "dob": row["dob"] if row else None,
