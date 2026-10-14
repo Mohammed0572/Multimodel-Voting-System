@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { API_BASE, useAuth } from "../context/AuthContext";
 import { castVote } from "../services/api";
+import { announceVoiceMessage } from "../lib/voiceAssistant";
 
 interface Candidate {
   id: number;
@@ -192,6 +193,9 @@ const Voting = () => {
       setHasVoted(true);
       setCredentialReady(false);
       setStage("sealed");
+      announceVoiceMessage(
+        "Your vote has been recorded successfully. Your ballot is sealed on the blockchain. Thank you for voting.",
+      );
       await loadVotingData();
     } catch (error) {
       console.error("Voting error:", error);
@@ -200,6 +204,7 @@ const Voting = () => {
           ? error.message
           : "The ballot was not recorded. Please try again.";
       setVoteError(message);
+      announceVoiceMessage(`Your vote was not recorded. ${message}`);
       setStage("review");
     } finally {
       setIsSubmitting(false);

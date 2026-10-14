@@ -4,6 +4,12 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth, API_BASE } from "../context/AuthContext";
 import { getFaceLandmarker, watchForBlink } from "../lib/blinkDetector";
+import {
+  announceVoiceMessage,
+  isVoiceAssistantEnabled,
+  isVoiceAssistantSupported,
+  setVoiceAssistantEnabled,
+} from "../lib/voiceAssistant";
 
 const VOTER_ID_PATTERN = /^[A-Z0-9/-]{1,64}$/;
 
@@ -20,6 +26,7 @@ const VoterLogin = () => {
   const [lightingMessage, setLightingMessage] = useState("");
   const [status, setStatus] = useState<Status>({ message: "", type: "info" });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(isVoiceAssistantEnabled);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,6 +74,19 @@ const VoterLogin = () => {
 
   const updateStatus = (message: string, type: Status["type"] = "info") => {
     setStatus({ message, type });
+    if (type === "error" || type === "success") announceVoiceMessage(message);
+  };
+
+  const toggleVoiceAssistant = () => {
+    if (!isVoiceAssistantSupported()) return;
+    const enabled = !voiceEnabled;
+    setVoiceAssistantEnabled(enabled);
+    setVoiceEnabled(enabled);
+    if (enabled) {
+      announceVoiceMessage(
+        "Voice guidance is on. I will speak important login updates, errors, and voting confirmations.",
+      );
+    }
   };
 
   const captureFixedIntervalFrames = async (
@@ -138,7 +158,7 @@ const VoterLogin = () => {
       });
       updateStatus(
         "Camera active. Center your face, then verify your identity.",
-        "success",
+        "info",
       );
     } catch (error) {
       console.error("Webcam error:", error);
@@ -247,7 +267,7 @@ const VoterLogin = () => {
       streamRef.current = null;
       setIsCameraActive(false);
       updateStatus(
-        "Identity verified. Checking eligibility and preparing your private voting session…",
+        "Face recognized. You are logged in. Checking your voting eligibility now.",
         "success",
       );
       navigate("/voting");
@@ -275,6 +295,21 @@ const VoterLogin = () => {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("voter.subtitle")}
+          </p>
+          <button
+            type="button"
+            onClick={toggleVoiceAssistant}
+            disabled={!isVoiceAssistantSupported()}
+            aria-pressed={voiceEnabled}
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-md border border-hairline bg-paper px-3 py-2 text-sm font-medium text-ink hover:border-ink disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span aria-hidden="true">{voiceEnabled ? "🔊" : "🔈"}</span>
+            {isVoiceAssistantSupported()
+              ? `Voice guidance ${voiceEnabled ? "on" : "off"}`
+              : "Voice guidance unavailable in this browser"}
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Speaks login errors and important voting updates.
           </p>
         </div>
 
