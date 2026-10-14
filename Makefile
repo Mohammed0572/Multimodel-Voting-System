@@ -10,12 +10,36 @@ TESSERACT ?= tesseract
 # Virtual environment python detection
 VENV_PY_WIN = server/face-recognition/.venv/Scripts/python.exe
 VENV_PY_UNIX = server/face-recognition/.venv/bin/python
-ifneq ($(wildcard $(VENV_PY_WIN)),)
-	BACKEND_PY := $(VENV_PY_WIN)
-else ifneq ($(wildcard $(VENV_PY_UNIX)),)
-	BACKEND_PY := $(VENV_PY_UNIX)
+ifeq ($(OS),Windows_NT)
+PYTHON_VENV = $(VENV_PY_WIN)
 else
-	BACKEND_PY := $(PYTHON)
+PYTHON_VENV = $(VENV_PY_UNIX)
+endif
+ifneq ($(wildcard $(VENV_PY_WIN)),)
+BACKEND_PY := $(VENV_PY_WIN)
+else ifneq ($(wildcard $(VENV_PY_UNIX)),)
+BACKEND_PY := $(VENV_PY_UNIX)
+else ifeq ($(OS),Windows_NT)
+ifneq ($(shell py -3.12 --version 2>NUL),)
+BACKEND_PY := py -3.12
+else ifneq ($(shell py -3.11 --version 2>NUL),)
+BACKEND_PY := py -3.11
+else ifneq ($(shell py -3.10 --version 2>NUL),)
+BACKEND_PY := py -3.10
+else
+BACKEND_PY := $(PYTHON)
+endif
+else ifneq ($(shell python3.12 --version 2>/dev/null),)
+BACKEND_PY := python3.12
+else ifneq ($(shell python3.11 --version 2>/dev/null),)
+BACKEND_PY := python3.11
+else ifneq ($(shell python3.10 --version 2>/dev/null),)
+BACKEND_PY := python3.10
+else
+BACKEND_PY := $(PYTHON)
+endif
+ifeq ($(strip $(wildcard $(VENV_PY_WIN) $(VENV_PY_UNIX))),)
+CREATE_PYTHON_VENV := $(BACKEND_PY) -m venv server/face-recognition/.venv
 endif
 
 help:
@@ -32,7 +56,7 @@ help:
 	@echo "  make migrate           - Deploy smart contracts to local Ganache"
 	@echo "  make backend           - Start FastAPI face recognition backend"
 	@echo "  make frontend          - Start Vite React frontend"
-	@echo "  make dev               - Install node dependencies & start full local stack"
+	@echo "  make dev               - Install Node/Python dependencies & start full local stack"
 	@echo "  make build             - Build the frontend for production"
 	@echo "  make lint              - Run linter (ESLint)"
 	@echo "  make test              - Run all tests (frontend, backend, contracts)"
@@ -53,13 +77,15 @@ install-node:
 
 install-python:
 	@echo "[*] Installing Python backend dependencies..."
-	$(BACKEND_PY) -m pip install -r server/face-recognition/requirements.txt
+	$(CREATE_PYTHON_VENV)
+	$(PYTHON_VENV) -m pip install -r server/face-recognition/requirements.txt
+	$(PYTHON_VENV) -m pip install --no-deps "face-recognition>=1.3.0"
 
 install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
 	@node scripts/install-tesseract.mjs
 
-dev: install-node
+dev: install-node install-python
 	@node scripts/start-demo.mjs
 
 compile:
@@ -112,7 +138,7 @@ docker-down:
 	@echo "[*] Stopping Docker Compose stack..."
 	docker compose -f server/docker-compose.yml down
 
-demo: install-node
+demo: install-node install-python
 	@node scripts/start-demo.mjs
 
 clean:

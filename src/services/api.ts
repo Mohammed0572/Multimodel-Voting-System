@@ -1,5 +1,6 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+import { API_BASE } from "./apiBase";
+
+const API_BASE_URL = API_BASE;
 
 async function parseResponse(response: Response) {
   const data = await response.json().catch(() => ({}));
@@ -21,10 +22,9 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const cleanBase = API_BASE_URL.replace(/\/+$/, "");
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const url =
-    cleanBase.endsWith("/api/v1") && cleanPath.startsWith("/api/v1")
-      ? `${cleanBase}${cleanPath.slice(7)}`
-      : `${cleanBase}${cleanPath}`;
+  const url = cleanPath.startsWith("/api/v1")
+    ? `${cleanBase}${cleanPath.slice(7)}`
+    : `${cleanBase}${cleanPath}`;
 
   const response = await fetch(url, {
     ...init,

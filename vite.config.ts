@@ -19,6 +19,7 @@ export default defineConfig({
   },
   server: {
     port: 8080,
+    strictPort: true,
     watch: {
       ignored: [
         '**/server/**',

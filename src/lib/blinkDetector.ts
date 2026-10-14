@@ -12,8 +12,8 @@ import {
  */
 const WASM_BASE_PATH = "/mediapipe/wasm";
 const MODEL_ASSET_PATH = "/mediapipe/face_landmarker.task";
-const BLINK_CLOSED_THRESHOLD = 0.5;
-const BLINK_OPEN_THRESHOLD = 0.25;
+const BLINK_CLOSED_THRESHOLD = 0.4;
+const BLINK_OPEN_THRESHOLD = 0.3;
 
 let landmarkerPromise: Promise<FaceLandmarker> | null = null;
 
@@ -83,6 +83,7 @@ export async function watchForBlink(
     let closedFrame: string | null = null;
     let closedPeakScore = 0;
     let postFrame: string | null = null;
+    let lastDetectionAt = 0;
     let state: "watching-open" | "watching-closed" = "watching-open";
     let settled = false;
 
@@ -114,10 +115,19 @@ export async function watchForBlink(
     const tick = () => {
       if (settled) return;
       if (video.readyState >= 2) {
+        const now = performance.now();
+        // Running MediaPipe at display refresh rate is wasteful on laptops
+        // and can make the camera preview stutter. 20 fps is enough to see a
+        // normal blink while leaving CPU/GPU time for the rest of the page.
+        if (now - lastDetectionAt < 50) {
+          rafId = window.requestAnimationFrame(tick);
+          return;
+        }
+        lastDetectionAt = now;
         try {
           const result: FaceLandmarkerResult = landmarker.detectForVideo(
             video,
-            performance.now(),
+            now,
           );
           const shapes = result.faceBlendshapes?.[0]?.categories ?? [];
           const left =

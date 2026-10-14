@@ -70,7 +70,10 @@ JWT_EXPIRY_HOURS: int = settings.JWT_EXPIRY_HOURS
 _CREDENTIAL_COOKIE = "voting_credential"
 _CREDENTIAL_MAX_AGE = settings.VOTING_CREDENTIAL_TTL_MINUTES * 60
 
-_cv_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="face-cv")
+# dlib's Windows build can terminate the entire process when multiple face
+# detection/encoding calls run concurrently. Serialize native CV work so a
+# voter request cannot take down the API process.
+_cv_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="face-cv")
 
 def get_password_hash(password: str) -> str:
     salt = bcrypt.gensalt()
@@ -192,6 +195,8 @@ def init_db() -> None:
             "verified_at": "TEXT",
             "deleted": "INTEGER NOT NULL DEFAULT 0",
             "voted": "INTEGER NOT NULL DEFAULT 0",
+            "last_voted_election_id": "TEXT",
+            "pending_face_encoding": "TEXT",
         }.items():
             if column not in existing_columns:
                 cursor.execute(f"ALTER TABLE voters ADD COLUMN {column} {definition}")
@@ -208,6 +213,7 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS voting_credentials (
                 credential_hash TEXT PRIMARY KEY NOT NULL,
                 voter_id TEXT NOT NULL,
+                election_id TEXT NOT NULL DEFAULT '',
                 issued_at TEXT NOT NULL,
                 expires_at TEXT NOT NULL,
                 consumed_at TEXT,
@@ -223,9 +229,21 @@ def init_db() -> None:
             cursor.execute("ALTER TABLE voting_credentials ADD COLUMN tx_hash TEXT")
         except sqlite3.OperationalError:
             pass
-        if os.getenv("RESET_VOTING_CREDENTIALS_ON_START", "false").lower() == "true":
-            cursor.execute("DELETE FROM voting_credentials")
-            log.info("Demo mode: reset voting credentials for the new local election.")
+        try:
+            cursor.execute(
+                "ALTER TABLE voting_credentials ADD COLUMN election_id TEXT NOT NULL DEFAULT ''"
+            )
+        except sqlite3.OperationalError:
+            pass
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS election_metadata (
+                election_id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
         if os.path.exists(CSBS_SEED_PATH):
             for student in json.loads(Path(CSBS_SEED_PATH).read_text()):
                 cursor.execute(
@@ -253,6 +271,7 @@ def init_db() -> None:
 
 
 def issue_voting_credential(voter_id: str) -> Optional[str]:
+    election_id = _current_election_id()
     raw_credential = secrets.token_bytes(32)
     credential_hash = hashlib.sha256(raw_credential).hexdigest()
 
@@ -294,17 +313,31 @@ def issue_voting_credential(voter_id: str) -> Optional[str]:
                 detail="Voter identity has not been approved.",
             )
 
+        already_voted = conn.execute(
+            """
+            SELECT 1 FROM voting_credentials
+            WHERE voter_id = ? AND election_id = ? AND consumed_at IS NOT NULL
+              AND revoked_at IS NULL
+            LIMIT 1
+            """,
+            (voter_id, election_id),
+        ).fetchone()
+        if already_voted:
+            conn.rollback()
+            return None
+
         existing = conn.execute(
             """
             SELECT consumed_at, expires_at
             FROM voting_credentials
             WHERE voter_id = ?
+              AND election_id = ?
                             AND consumed_at IS NULL
                             AND revoked_at IS NULL
             ORDER BY issued_at DESC
             LIMIT 1
             """,
-            (voter_id,),
+            (voter_id, election_id),
         ).fetchone()
 
         if existing:
@@ -316,10 +349,11 @@ def issue_voting_credential(voter_id: str) -> Optional[str]:
                         UPDATE voting_credentials
                         SET revoked_at = ?
                         WHERE voter_id = ?
+                          AND election_id = ?
                           AND consumed_at IS NULL
                           AND revoked_at IS NULL
                         """,
-                        (datetime.now(timezone.utc).isoformat(), voter_id),
+                        (datetime.now(timezone.utc).isoformat(), voter_id, election_id),
                     )
             except HTTPException:
                 raise
@@ -331,17 +365,19 @@ def issue_voting_credential(voter_id: str) -> Optional[str]:
             INSERT INTO voting_credentials (
                 credential_hash,
                 voter_id,
+                election_id,
                 issued_at,
                 expires_at,
                 consumed_at,
                 revoked_at,
                 tx_hash
             )
-            VALUES (?, ?, ?, ?, NULL, NULL, NULL)
+            VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL)
             """,
             (
                 credential_hash,
                 voter_id,
+                election_id,
                 issued_at.isoformat(),
                 expires_at.isoformat(),
             ),
@@ -360,6 +396,11 @@ def _credential_hash_from_cookie(credential: str) -> str:
     if len(raw) != 32:
         raise HTTPException(status_code=401, detail="Invalid voting credential.")
     return hashlib.sha256(raw).hexdigest()
+
+
+def _current_election_id() -> str:
+    """Use the deployed contract address as the stable ID for one election."""
+    return (settings.BLOCKCHAIN_CONTRACT_ADDRESS or "default").strip().lower()
 
 
 def _relayer_configuration() -> tuple[str, str, str]:
@@ -797,14 +838,29 @@ def get_enrollment_embedding(
 def get_face_details(
     image: np.ndarray,
     need_encoding: bool = True,
+    normalize_illumination: bool = False,
 ) -> Optional[tuple[Optional[np.ndarray], dict]]:
-    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    working_image = image
+    if normalize_illumination:
+        # Local contrast normalization helps with shadows without loosening
+        # the face-match threshold. Login can also fall back to the original
+        # pixels for profiles enrolled before this enhancement.
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        lightness, channel_a, channel_b = cv2.split(lab)
+        lightness = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8)).apply(lightness)
+        working_image = cv2.cvtColor(
+            cv2.merge((lightness, channel_a, channel_b)),
+            cv2.COLOR_LAB2BGR,
+        )
+    rgb = cv2.cvtColor(working_image, cv2.COLOR_BGR2RGB)
 
     height, width = rgb.shape[:2]
     if height < 80 or width < 80:
         return None
 
-    detection_scale = 0.25 if min(height, width) >= 320 else 1.0
+    # Half-size detection keeps enough face detail for ordinary laptop cameras
+    # while remaining much cheaper than running HOG over the full frame.
+    detection_scale = 0.5 if min(height, width) >= 320 else 1.0
     if detection_scale == 1.0:
         small_rgb = rgb
     else:
@@ -895,6 +951,31 @@ def calculate_ear(eye_points: list) -> float:
     B = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
     C = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
     return float((A + B) / (2.0 * C))
+
+
+def _has_blink_sequence(eye_samples: list[tuple[Optional[float], Optional[float]]]) -> bool:
+    """Confirm a relative open→closed→open change, tolerating eye-shape variance."""
+    min_open = max(0.17, EAR_MIN_OPEN * 0.70)
+    for eye_index in (0, 1):
+        values = [sample[eye_index] for sample in eye_samples]
+        for closed_index in range(1, len(values) - 1):
+            closed = values[closed_index]
+            if closed is None:
+                continue
+            earlier = [value for value in values[:closed_index] if value is not None]
+            later = [value for value in values[closed_index + 1:] if value is not None]
+            if not earlier or not later:
+                continue
+            open_before = max(earlier)
+            open_after = max(later)
+            if min(open_before, open_after) < min_open:
+                continue
+            open_level = min(open_before, open_after)
+            # Relative closure handles naturally small EAR values and imperfect
+            # lighting while still requiring a visible close-and-reopen motion.
+            if closed <= open_level * 0.82 and open_level - closed >= 0.035:
+                return True
+    return False
 
 
 def compare_faces(
@@ -1145,6 +1226,20 @@ class EligibilityVerificationRequest(BaseModel):
     verified: bool
 
 
+class ElectionNameRequest(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def election_name_must_not_be_empty(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Election name must not be empty.")
+        if len(cleaned) > 120:
+            raise ValueError("Election name must be 120 characters or fewer.")
+        return cleaned
+
+
 class CastVoteRequest(BaseModel):
     candidate_id: int
 
@@ -1336,13 +1431,49 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     """
     voter_id = payload.voter_id.strip().lower()
 
+    # Check that this voter has a face profile before spending time decoding
+    # frames. The CSBS roster is preloaded with empty templates until signup.
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT role, face_encoding, name, usn, branch, validity, dob, id_verified, student_name, voted "
+            "FROM voters WHERE voter_id = ?",
+            (voter_id,),
+        ).fetchone()
+
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Voter ID not found. Register this voter first.",
+        )
+    if not row["face_encoding"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This voter ID is on the roster but has no face profile yet. Complete face registration, then try again.",
+        )
+    try:
+        stored_encoding = np.asarray(json.loads(row["face_encoding"]), dtype=np.float64)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        log.error("Corrupt face encoding for voter '%s'", voter_id)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The saved face profile is invalid. Please register your face again.",
+        )
+    if stored_encoding.shape != (128,) or not np.isfinite(stored_encoding).all():
+        log.error("Invalid encoding for voter '%s': shape=%s", voter_id, stored_encoding.shape)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The saved face profile is invalid. Please register your face again.",
+        )
+
     if len(payload.images_base64) < 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Liveness detection requires a sequence of images (at least 2).",
         )
 
-    def process_frame(image_base64: str):
+    identity_frame_indexes = {0, len(payload.images_base64) - 1}
+
+    def process_frame(index: int, image_base64: str):
         try:
             image = decode_base64_image(image_base64)
         except ValueError as exc:
@@ -1350,13 +1481,21 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid image in sequence: {exc}",
             ) from exc
-        return image, get_face_details(image, need_encoding=False)
+        # Landmarks are needed on every frame for blink detection, but full
+        # face encodings are expensive. Two separated identity samples are
+        # enough for a stable match and keep the request quick.
+        details = get_face_details(
+            image,
+            need_encoding=index in identity_frame_indexes,
+            normalize_illumination=True,
+        )
+        return image, details
 
     loop = asyncio.get_running_loop()
     processed_frames = await asyncio.gather(
         *[
-            loop.run_in_executor(_cv_executor, process_frame, image_base64)
-            for image_base64 in payload.images_base64
+            loop.run_in_executor(_cv_executor, process_frame, index, image_base64)
+            for index, image_base64 in enumerate(payload.images_base64)
         ]
     )
     usable_frames = [
@@ -1371,68 +1510,50 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
             detail="No faces detected in the provided image sequence.",
         )
 
-    encoding_indexes = {usable_frames[0][0], usable_frames[-1][0]}
-    encoding_jobs = [
-        loop.run_in_executor(_cv_executor, get_face_details, image, True)
-        for index, image, _ in usable_frames
-        if index in encoding_indexes
-    ]
-    encoded_frames = [
-        details
-        for details in await asyncio.gather(*encoding_jobs)
-        if details is not None and details[0] is not None
-    ]
-
+    encoded_frames = [details for _, _, details in usable_frames if details[0] is not None]
     if not encoded_frames:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Could not get a clear face reading. Please try again.",
         )
 
-    base_embedding = encoded_frames[0][0]
-
-    # Consistency check + EAR collection across frames
-    ears = []
-    for emb, landmarks in encoded_frames:
-        match, _ = compare_faces(base_embedding, emb, tolerance=0.4)
-        if not match:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Multiple different faces or inconsistent face detected across frames.",
-            )
-
-    for _, _, (_, landmarks) in usable_frames:
-        if "left_eye" in landmarks and "right_eye" in landmarks:
-            left_ear = calculate_ear(landmarks["left_eye"])
-            right_ear = calculate_ear(landmarks["right_eye"])
-            ears.append((left_ear + right_ear) / 2.0)
-
-    # Liveness: blink detection via EAR
-    if len(ears) > 1:
-        min_ear = min(ears)
-        max_ear = max(ears)
-        if min_ear > EAR_MIN_CLOSED or max_ear < EAR_MIN_OPEN:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Liveness check failed. Please blink while verifying.",
-            )
-
-    embedding = base_embedding
-
-    # Fetch stored encoding and registration details
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT role, face_encoding, name, usn, branch, validity, dob, id_verified, student_name FROM voters WHERE voter_id = ?",
-            (voter_id,),
+    frame_embeddings = [validate_embedding(details[0]) for details in encoded_frames]
+    reference_embedding = frame_embeddings[0]
+    consistent_embeddings = [
+        embedding
+        for embedding in frame_embeddings
+        if compare_faces(reference_embedding, embedding, tolerance=0.55)[0]
+    ]
+    if len(frame_embeddings) > 1 and len(consistent_embeddings) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Keep only your face in view and hold still while verifying.",
         )
-        row = cursor.fetchone()
+    base_embedding = validate_embedding(np.mean(consistent_embeddings, axis=0))
 
-    if row is None:
+    # Collect eye-aspect ratios across the captured sequence for blink checks.
+    eye_samples: list[tuple[Optional[float], Optional[float]]] = [
+        (None, None) for _ in payload.images_base64
+    ]
+    for index, _, (_, landmarks) in usable_frames:
+        left_ear = calculate_ear(landmarks["left_eye"]) if "left_eye" in landmarks else None
+        right_ear = calculate_ear(landmarks["right_eye"]) if "right_eye" in landmarks else None
+        eye_samples[index] = (left_ear, right_ear)
+
+    # Liveness: require a relative blink sequence rather than absolute EAR
+    # cutoffs, which vary by anatomy, camera angle, and low-light image quality.
+    if sum(any(value is not None for value in sample) for sample in eye_samples) < 2:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Keep your full face visible and try again so the blink can be checked.",
+        )
+    if not _has_blink_sequence(eye_samples):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Voter ID not found. Please register first.",
+            detail="I couldn’t confirm a full blink. Keep your face centered, then blink once during capture.",
         )
+
+    embedding = base_embedding
 
     role: str = row["role"]
     profile_name = row["name"] or row["student_name"]
@@ -1442,23 +1563,34 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     profile_dob = row["dob"]
     is_eligible = bool(row["id_verified"])
 
-    try:
-        stored_encoding = np.array(json.loads(row["face_encoding"]), dtype=np.float64)
-    except (json.JSONDecodeError, TypeError) as exc:
-        log.error("Corrupt face encoding for voter '%s': %s", voter_id, exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Stored face encoding is corrupted. Please re-enroll.",
-        )
-
-    if stored_encoding.shape != (128,):
-        log.error("Invalid encoding shape for voter '%s': %s", voter_id, stored_encoding.shape)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Stored face encoding has invalid dimensions. Please re-enroll.",
-        )
-
     is_match, distance = compare_faces(stored_encoding, embedding)
+
+    if not is_match:
+        # Older registrations were encoded without illumination normalization.
+        # Retry internally on the original pixels before rejecting the voter;
+        # this is still the same submitted capture and does not require another
+        # camera attempt.
+        legacy_embeddings = []
+        for index, image, _ in usable_frames:
+            if index not in identity_frame_indexes:
+                continue
+            legacy_details = get_face_details(
+                image,
+                need_encoding=True,
+                normalize_illumination=False,
+            )
+            if legacy_details and legacy_details[0] is not None:
+                legacy_embeddings.append(validate_embedding(legacy_details[0]))
+        if legacy_embeddings:
+            legacy_embedding = validate_embedding(np.mean(legacy_embeddings, axis=0))
+            legacy_match, legacy_distance = compare_faces(
+                stored_encoding,
+                legacy_embedding,
+            )
+            if legacy_match or legacy_distance < distance:
+                embedding = legacy_embedding
+                is_match = legacy_match
+                distance = legacy_distance
 
     log.info(
         "[VERIFY] voter=%s  distance=%.4f  tolerance=%s  match=%s",
@@ -1473,7 +1605,11 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
         )
 
     token = create_jwt(voter_id, role)
-    voting_credential = issue_voting_credential(voter_id) if is_eligible and role == "user" else None
+    voting_credential = (
+        issue_voting_credential(voter_id)
+        if is_eligible and role == "user"
+        else None
+    )
 
     response = JSONResponse(
         content={
@@ -1505,6 +1641,14 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
             samesite="lax",
             max_age=_CREDENTIAL_MAX_AGE,
             path="/",
+        )
+    else:
+        response.delete_cookie(
+            key=_CREDENTIAL_COOKIE,
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+            secure=settings.COOKIE_SECURE,
+            httponly=True,
         )
     log.info("[AUTH] voter='%s' role='%s' — HttpOnly cookie issued.", voter_id, role)
     return response
@@ -1602,13 +1746,18 @@ async def auth_logout(request: Request):
                         SELECT credential_hash
                         FROM voting_credentials
                         WHERE voter_id = ?
+                          AND election_id = ?
                           AND consumed_at IS NULL
                           AND revoked_at IS NULL
                         ORDER BY issued_at DESC
                         LIMIT 1
                     )
                     """,
-                    (datetime.now(timezone.utc).isoformat(), voter_id),
+                    (
+                        datetime.now(timezone.utc).isoformat(),
+                        voter_id,
+                        _current_election_id(),
+                    ),
                 )
             conn.commit()
 
@@ -1627,18 +1776,36 @@ async def auth_logout(request: Request):
 
 @app.get("/api/v1/admin/voters")
 @limiter.limit("30/minute")
-async def admin_voters(request: Request, _admin: dict = Depends(require_admin)):
+async def admin_voters(
+    request: Request,
+    response: Response,
+    _admin: dict = Depends(require_admin),
+):
     """Return the CSBS voter registry from SQLite for the admin dashboard."""
+    # Participation is time-sensitive and account-specific; do not let the
+    # browser reuse a cached pre-vote roster response.
+    response.headers["Cache-Control"] = "private, no-store, no-cache, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    election_id = _current_election_id()
     with get_db() as conn:
         rows = conn.execute(
             """
             SELECT voter_id, role
                  , student_name, branch, class_name, batch, id_verified, verified_by, verified_at
+                 , pending_face_encoding
+                 , (EXISTS(
+                     SELECT 1 FROM voting_credentials vc
+                     WHERE vc.voter_id = voters.voter_id
+                       AND vc.election_id = ?
+                       AND vc.consumed_at IS NOT NULL
+                       AND vc.revoked_at IS NULL
+                   ) OR voters.last_voted_election_id = ?) AS has_voted
             FROM voters
             WHERE voter_id LIKE '1kg23cb%'
                OR voter_id = '1kg24cb400'
             ORDER BY voter_id
-            """
+            """,
+            (election_id, election_id),
         ).fetchall()
 
     students = []
@@ -1653,10 +1820,16 @@ async def admin_voters(request: Request, _admin: dict = Depends(require_admin)):
             "role": row["role"],
             "studentName": row["student_name"],
             "idVerified": bool(row["id_verified"]),
+            "faceUpdatePending": bool(row["pending_face_encoding"]),
+            "hasVoted": bool(row["has_voted"]),
             "verifiedBy": row["verified_by"],
             "verifiedAt": row["verified_at"],
         })
-    return {"students": students, "total": len(students)}
+    return {
+        "students": students,
+        "total": len(students),
+        "election_id": election_id,
+    }
 
 
 @app.patch("/api/v1/admin/voters/{voter_id}/verify")
@@ -1682,6 +1855,70 @@ async def verify_voter_eligibility(
             raise HTTPException(status_code=404, detail="CSBS voter not found.")
         conn.commit()
     return {"voter_id": normalized_id.upper(), "id_verified": payload.verified}
+
+
+@app.post("/api/v1/admin/voters/{voter_id}/approve-face-update")
+@limiter.limit("30/minute")
+async def approve_face_update(
+    request: Request,
+    voter_id: str,
+    admin: dict = Depends(require_admin),
+):
+    """Activate a replacement face profile after an admin identity check."""
+    normalized_id = voter_id.strip().lower()
+    with get_db() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE voters
+            SET face_encoding = pending_face_encoding,
+                pending_face_encoding = NULL,
+                verified_by = ?, verified_at = ?
+            WHERE voter_id = ? AND pending_face_encoding IS NOT NULL
+            """,
+            (admin["voter_id"], datetime.now(timezone.utc).isoformat(), normalized_id),
+        )
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="No pending face update for this voter.")
+        conn.commit()
+    return {"voter_id": normalized_id.upper(), "face_update_approved": True}
+
+
+@app.get("/api/v1/election")
+@limiter.limit("60/minute")
+async def election_info(request: Request):
+    """Return the current contract's public display name."""
+    election_id = _current_election_id()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT name FROM election_metadata WHERE election_id = ?",
+            (election_id,),
+        ).fetchone()
+    return {"election_id": election_id, "name": row["name"] if row else ""}
+
+
+@app.put("/api/v1/admin/election")
+@limiter.limit("20/minute")
+async def update_election_info(
+    request: Request,
+    payload: ElectionNameRequest,
+    _admin: dict = Depends(require_admin),
+):
+    """Save the current election's display name for the voting portal."""
+    election_id = _current_election_id()
+    updated_at = datetime.now(timezone.utc).isoformat()
+    with get_db() as conn:
+        conn.execute(
+            """
+            INSERT INTO election_metadata (election_id, name, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(election_id) DO UPDATE SET
+                name = excluded.name,
+                updated_at = excluded.updated_at
+            """,
+            (election_id, payload.name, updated_at),
+        )
+        conn.commit()
+    return {"election_id": election_id, "name": payload.name}
 
 
 @app.delete("/api/v1/admin/voters/{voter_id}")
@@ -1724,13 +1961,19 @@ async def voter_eligibility(request: Request):
         raise HTTPException(status_code=401, detail="Not authenticated.")
     session = decode_jwt(token)
     voter_id = session.get("voter_id", "").strip().lower()
+    election_id = _current_election_id()
     with get_db() as conn:
         row = conn.execute(
             """SELECT voter_id, student_name, branch, class_name, batch, id_verified,
-                      (SELECT tx_hash FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id ORDER BY vc.issued_at DESC LIMIT 1) AS tx_hash,
-                      COALESCE((SELECT consumed_at IS NOT NULL FROM voting_credentials vc WHERE vc.voter_id = voters.voter_id ORDER BY vc.issued_at DESC LIMIT 1), 0) AS has_voted
+                      (SELECT tx_hash FROM voting_credentials vc
+                       WHERE vc.voter_id = voters.voter_id AND vc.election_id = ?
+                       ORDER BY vc.issued_at DESC LIMIT 1) AS tx_hash,
+                      (EXISTS(SELECT 1 FROM voting_credentials vc
+                             WHERE vc.voter_id = voters.voter_id AND vc.election_id = ?
+                               AND vc.consumed_at IS NOT NULL AND vc.revoked_at IS NULL)
+                       OR voters.last_voted_election_id = ?) AS has_voted
                FROM voters WHERE voter_id = ?""",
-            (voter_id,),
+            (election_id, election_id, election_id, voter_id),
         ).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Voter is not registered.")
@@ -1743,18 +1986,52 @@ async def voter_eligibility(request: Request):
         "eligible": bool(row["id_verified"]),
         "voted": bool(row["has_voted"]),
         "tx_hash": row["tx_hash"],
-        "credential_ready": bool(request.cookies.get(_CREDENTIAL_COOKIE)),
+        "credential_ready": False,
     }
-    response = JSONResponse(result)
-    if result["eligible"] and not result["voted"] and not request.cookies.get(_CREDENTIAL_COOKIE):
+    raw_credential = request.cookies.get(_CREDENTIAL_COOKIE)
+    if raw_credential and result["eligible"] and not result["voted"]:
+        try:
+            supplied_hash = _credential_hash_from_cookie(raw_credential)
+        except HTTPException:
+            supplied_hash = ""
+        if supplied_hash:
+            with get_db() as conn:
+                result["credential_ready"] = conn.execute(
+                    """
+                    SELECT 1 FROM voting_credentials
+                    WHERE credential_hash = ? AND election_id = ?
+                      AND consumed_at IS NULL AND revoked_at IS NULL
+                    """,
+                    (supplied_hash, election_id),
+                ).fetchone() is not None
+    if result["eligible"] and not result["voted"] and not result["credential_ready"]:
         credential = issue_voting_credential(voter_id)
         if credential:
+            result["credential_ready"] = True
+            response = JSONResponse(result)
             response.set_cookie(
                 key=_CREDENTIAL_COOKIE, value=credential, httponly=True,
                 secure=settings.COOKIE_SECURE, samesite="lax",
                 max_age=_CREDENTIAL_MAX_AGE, path="/",
             )
-            result["credential_ready"] = True
+            return response
+    response = JSONResponse(result)
+    if result["voted"]:
+        response.delete_cookie(
+            key=_CREDENTIAL_COOKIE,
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+            secure=settings.COOKIE_SECURE,
+            httponly=True,
+        )
+    elif raw_credential and not result["credential_ready"]:
+        response.delete_cookie(
+            key=_CREDENTIAL_COOKIE,
+            path="/",
+            samesite=settings.COOKIE_SAMESITE,
+            secure=settings.COOKIE_SECURE,
+            httponly=True,
+        )
     return response
 
 
@@ -1807,12 +2084,13 @@ async def cast_vote(
 
     credential_hash = hashlib.sha256(credential).hexdigest()
     voter_id = current_user.get("voter_id", "").strip().lower()
+    election_id = _current_election_id()
 
     with get_db() as conn:
         conn.execute("BEGIN IMMEDIATE")
         credential_row = conn.execute(
             """
-            SELECT credential_hash, voter_id, expires_at,
+            SELECT credential_hash, voter_id, election_id, expires_at,
                      consumed_at, revoked_at, tx_hash
             FROM voting_credentials
             WHERE credential_hash = ?
@@ -1830,6 +2108,12 @@ async def cast_vote(
             raise HTTPException(
                 status_code=403,
                 detail="Credential does not belong to this voter.",
+            )
+
+        if credential_row["election_id"] != election_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Voting credential belongs to a different election. Refresh the voting page.",
             )
 
         if credential_row["consumed_at"] is not None:
@@ -1851,12 +2135,17 @@ async def cast_vote(
                 detail="Voting credential has expired.",
             )
 
-        voter = conn.execute(
+        already_voted = conn.execute(
             """
-            SELECT id_verified, deleted, voted
-            FROM voters
-            WHERE voter_id = ?
+            SELECT 1 FROM voting_credentials
+            WHERE voter_id = ? AND election_id = ? AND consumed_at IS NOT NULL
+              AND revoked_at IS NULL
+            LIMIT 1
             """,
+            (voter_id, election_id),
+        ).fetchone()
+        voter = conn.execute(
+            "SELECT id_verified, deleted FROM voters WHERE voter_id = ?",
             (voter_id,),
         ).fetchone()
 
@@ -1866,7 +2155,7 @@ async def cast_vote(
                 detail="Voter is not eligible.",
             )
 
-        if voter["voted"]:
+        if already_voted:
             raise HTTPException(
                 status_code=409,
                 detail="This voter has already voted.",
@@ -1880,6 +2169,7 @@ async def cast_vote(
             SET consumed_at = ?,
                 tx_hash = ?
             WHERE credential_hash = ?
+              AND election_id = ?
               AND consumed_at IS NULL
                             AND revoked_at IS NULL
             """,
@@ -1887,6 +2177,7 @@ async def cast_vote(
                 datetime.now(timezone.utc).isoformat(),
                 transaction_hash,
                 credential_hash,
+                election_id,
             ),
         )
 
@@ -1900,11 +2191,11 @@ async def cast_vote(
         conn.execute(
             """
             UPDATE voters
-            SET voted = 1
+            SET voted = 1,
+                last_voted_election_id = ?
             WHERE voter_id = ?
-              AND voted = 0
             """,
-            (voter_id,),
+            (election_id, voter_id),
         )
 
         conn.commit()
@@ -1987,8 +2278,34 @@ async def register_user(
     encoding_json = json.dumps(embedding.tolist())
 
     with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
+        conn.execute("BEGIN IMMEDIATE")
+        existing = conn.execute(
+            "SELECT role, face_encoding, deleted FROM voters WHERE voter_id = ?",
+            (voter_id,),
+        ).fetchone()
+        if existing and existing["deleted"]:
+            conn.rollback()
+            raise HTTPException(status_code=403, detail="This voter account has been deleted.")
+        if existing and existing["role"] != "user":
+            conn.rollback()
+            raise HTTPException(status_code=409, detail="This ID belongs to a non-voter account.")
+
+        if existing and existing["face_encoding"]:
+            # Never replace an active login profile through public self-service.
+            # Queue the new embedding for an admin to compare with the physical ID.
+            conn.execute(
+                "UPDATE voters SET pending_face_encoding = ? WHERE voter_id = ?",
+                (encoding_json, voter_id),
+            )
+            conn.commit()
+            log.info("[REGISTER] voter='%s' submitted a face update for admin review.", voter_id)
+            return {
+                "message": "Replacement face image submitted for admin review.",
+                "role": role,
+                "pending_review": True,
+            }
+
+        conn.execute(
             """
             INSERT INTO voters (voter_id, role, face_encoding, name, usn, branch, validity, dob)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -2005,4 +2322,4 @@ async def register_user(
         conn.commit()
 
     log.info("[REGISTER] voter='%s' self-registered.", voter_id)
-    return {"message": f"Voter '{voter_id}' registered successfully.", "role": role}
+    return {"message": f"Voter '{voter_id}' registered successfully.", "role": role, "pending_review": False}

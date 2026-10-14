@@ -44,6 +44,7 @@ const Voting = () => {
   const { session, logout } = useAuth();
 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [electionName, setElectionName] = useState("");
   const [electionState, setElectionState] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
@@ -64,6 +65,22 @@ const Voting = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [voteError, setVoteError] = useState<string | null>(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE}/election`, { credentials: "include" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Unable to load election details.");
+        return response.json();
+      })
+      .then((data) => {
+        if (!cancelled) setElectionName(String(data.name || ""));
+      })
+      .catch((loadError) => console.error(loadError));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadVotingData = useCallback(async () => {
     const voterId = session?.voter_id?.trim();
@@ -279,11 +296,12 @@ const Voting = () => {
                 Election Status
               </div>
               <h1 className="mt-2 font-display text-3xl font-semibold md:text-4xl">
-                {electionState === 1
-                  ? "Lok Sabha 2026 · Phase 3"
-                  : electionState === 2
-                    ? "Election Ended"
-                    : "Election Not Started"}
+                {electionName ||
+                  (electionState === 1
+                    ? "Election in Progress"
+                    : electionState === 2
+                      ? "Election Ended"
+                      : "Election Not Started")}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">
@@ -448,6 +466,18 @@ const Voting = () => {
                         ? "The election has not started yet."
                         : "The election has ended."}
                     </div>
+                  ) : stage === "review" && chosen ? (
+                    <div className="mt-6 rounded-md border border-saffron/40 bg-saffron/5 p-5">
+                      <div className="text-xs uppercase tracking-[0.2em] text-saffron">
+                        Locked ballot selection
+                      </div>
+                      <div className="mt-2 font-display text-xl font-semibold">
+                        {chosen.name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {chosen.party}
+                      </div>
+                    </div>
                   ) : displayCandidates.length === 0 ? (
                     <div className="mt-6 p-8 text-center rounded-md border border-hairline bg-paper text-muted-foreground">
                       No candidates are currently registered.
@@ -520,18 +550,12 @@ const Voting = () => {
                       Confirm your selection
                     </h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Your choice will be submitted through your private,
-                      one-time voting credential. No voter ID is sent with the
-                      ballot, and this action cannot be undone.
+                      You selected <strong>{chosen.name}</strong>. Once you
+                      confirm, your private one-time credential records one
+                      final vote. No voter ID is sent with the ballot, and a
+                      submitted vote cannot be changed.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setStage("choose")}
-                        className="rounded-md border border-hairline px-4 py-2 text-sm font-semibold hover:border-ink"
-                      >
-                        Change selection
-                      </button>
                       <button
                         type="button"
                         disabled={!chosen || isSubmitting || Boolean(transactionHash)}

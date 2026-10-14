@@ -248,10 +248,13 @@ Install the Python packages for the Face Authentication API:
 ```bash
 cd server/face-recognition
 pip install -r requirements.txt
+pip install --no-deps "face-recognition>=1.3.0"
+# Optional: enable OCR-based voter ID scanning (downloads PyTorch)
+pip install -r requirements-ocr.txt
 cd ../..
 ```
 
-_(Note: The `face_recognition` Python library requires `dlib`, which may need CMake and a C++ compiler installed on your system.)_
+`dlib-bin` provides the native dlib module. The `face-recognition` wrapper is installed without dependencies so pip does not try to compile a second dlib from source.
 
 ### 3. Configure the Environment
 

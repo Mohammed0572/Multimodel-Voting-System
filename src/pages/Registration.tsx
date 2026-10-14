@@ -327,6 +327,15 @@ const Registration = () => {
         throw new Error(errorData.detail || "Registration failed.");
       }
 
+      const result = await response.json();
+      if (result.pending_review) {
+        updateStatus(
+          "Replacement face image submitted. An administrator must check your ID card and approve it before it can be used to log in.",
+          "success",
+        );
+        return;
+      }
+
       updateStatus(
         "Registration successful! Redirecting to login...",
         "success",
@@ -351,10 +360,10 @@ const Registration = () => {
       <div className="w-full max-w-lg overflow-hidden rounded-md border border-hairline bg-paper shadow-sm">
         <div className="border-b border-hairline bg-paper-warm p-6 text-center">
           <h2 className="font-display text-2xl font-semibold text-ink">
-            Voter Registration
+            Voter Registration / Face Update
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Register securely using your college ID card.
+            Register a new face profile or submit a replacement for admin review.
           </p>
         </div>
 
@@ -546,7 +555,7 @@ const Registration = () => {
             >
               {isProcessing
                 ? "Registering..."
-                : "📸 Capture & Complete Registration"}
+                : "📸 Capture & Submit Face Image"}
             </button>
           </div>
 

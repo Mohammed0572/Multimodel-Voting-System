@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth, API_BASE } from "../context/AuthContext";
 import { getFaceLandmarker, watchForBlink } from "../lib/blinkDetector";
@@ -16,6 +17,7 @@ const VoterLogin = () => {
   const { setAuth } = useAuth();
   const [voterId, setVoterId] = useState("");
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [lightingMessage, setLightingMessage] = useState("");
   const [status, setStatus] = useState<Status>({ message: "", type: "info" });
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -23,6 +25,38 @@ const VoterLogin = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isCameraActive) {
+      setLightingMessage("");
+      return;
+    }
+
+    const sampleCanvas = document.createElement("canvas");
+    sampleCanvas.width = 32;
+    sampleCanvas.height = 24;
+    const sampleContext = sampleCanvas.getContext("2d", { willReadFrequently: true });
+    const intervalId = window.setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.readyState < 2 || !sampleContext) return;
+      sampleContext.drawImage(video, 0, 0, sampleCanvas.width, sampleCanvas.height);
+      const pixels = sampleContext.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+      let brightness = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        brightness += 0.2126 * pixels[index] + 0.7152 * pixels[index + 1] + 0.0722 * pixels[index + 2];
+      }
+      brightness /= pixels.length / 4;
+      setLightingMessage(
+        brightness < 42
+          ? "Lighting is low. Face a window or lamp; your face should be clearly visible."
+          : brightness > 225
+            ? "The camera looks overexposed. Turn away from direct light."
+            : "Lighting looks good. Keep your face centered and blink once.",
+      );
+    }, 500);
+
+    return () => window.clearInterval(intervalId);
+  }, [isCameraActive]);
 
   useEffect(() => {
     return () => {
@@ -49,10 +83,10 @@ const VoterLogin = () => {
     canvas.height = video.videoHeight;
     const frames: string[] = [];
     const maxFrames = 6;
-    const frameDelayMs = 100;
+    const frameDelayMs = 160;
     for (let index = 0; index < maxFrames; index += 1) {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      frames.push(canvas.toDataURL("image/jpeg", 0.6));
+      frames.push(canvas.toDataURL("image/jpeg", 0.72));
       if (index < maxFrames - 1) {
         await new Promise((resolve) =>
           window.setTimeout(resolve, frameDelayMs),
@@ -160,13 +194,13 @@ const VoterLogin = () => {
       try {
         const result = await watchForBlink(video, canvas, {
           timeoutMs: 6000,
-          jpegQuality: 0.6,
+          jpegQuality: 0.72,
           onStatus: (message) => updateStatus(message),
         });
         frames = result.frames;
         if (!result.blinkConfirmed) {
           updateStatus(
-            "No blink detected yet… verifying with what we captured…",
+            "Checking the captured frames now. Keep your face centered and blink once during verification.",
           );
         }
       } catch (error) {
@@ -191,11 +225,11 @@ const VoterLogin = () => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          throw new Error("Face mismatch or Voter ID not found.");
-        }
         throw new Error(
-          errorData.detail || "Verification failed. Please try again.",
+          errorData.detail ||
+            (response.status === 401
+              ? "Face verification failed. Check your voter ID, face lighting, and blink, then try again."
+              : "Verification failed. Please try again."),
         );
       }
 
@@ -310,6 +344,14 @@ const VoterLogin = () => {
                 </div>
               )}
             </div>
+            {isCameraActive && lightingMessage && (
+              <p
+                className={`mt-2 text-xs ${lightingMessage.startsWith("Lighting is low") || lightingMessage.startsWith("The camera looks") ? "text-amber-700" : "text-india-green"}`}
+                aria-live="polite"
+              >
+                {lightingMessage}
+              </p>
+            )}
           </div>
 
           {status.message && (
@@ -342,6 +384,15 @@ const VoterLogin = () => {
             )}
           </div>
         </form>
+        <div className="border-t border-hairline px-6 py-4 text-center text-sm text-muted-foreground">
+          Face not matching?{" "}
+          <Link to="/register" className="font-medium text-india-blue underline">
+            Update your face image
+          </Link>
+          <p className="mt-1 text-xs">
+            A replacement is activated after an administrator checks your ID card.
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ RUN apt-get update \
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --no-deps "face-recognition>=1.3.0"
+RUN pip install --no-cache-dir -r requirements-ocr.txt
 
 COPY . .
 

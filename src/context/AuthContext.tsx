@@ -6,12 +6,9 @@ import {
   useCallback,
   ReactNode,
 } from "react";
+import { API_BASE } from "../services/apiBase";
 
-const defaultApiHost =
-  typeof window !== "undefined" ? window.location.hostname : "127.0.0.1";
-
-export const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || `http://${defaultApiHost}:8000/api/v1`;
+export { API_BASE } from "../services/apiBase";
 
 export interface AuthSession {
   voter_id: string;

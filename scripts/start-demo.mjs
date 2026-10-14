@@ -1,12 +1,15 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
+dotenv.config({ path: path.join(rootDir, ".env") });
 
 // ANSI Color codes
 const colors = {
@@ -68,9 +71,37 @@ function findPython() {
     "python",
   );
 
-  if (fs.existsSync(venvWin)) return venvWin;
-  if (fs.existsSync(venvUnix)) return venvUnix;
-  return process.platform === "win32" ? "python" : "python3";
+  if (fs.existsSync(venvWin)) return { command: venvWin, args: [] };
+  if (fs.existsSync(venvUnix)) return { command: venvUnix, args: [] };
+  if (process.env.PYTHON?.trim()) {
+    return { command: process.env.PYTHON.trim(), args: [] };
+  }
+
+  if (process.platform === "win32") {
+    for (const version of ["3.12", "3.11", "3.10"]) {
+      const result = spawnSync("py", [`-${version}`, "--version"], {
+        encoding: "utf8",
+        windowsHide: true,
+      });
+      if (result.status === 0) {
+        return { command: "py", args: [`-${version}`] };
+      }
+    }
+    throw new Error(
+      "Python 3.12, 3.11, or 3.10 is required for the face-recognition backend. Install one or set up server/face-recognition/.venv.",
+    );
+  }
+
+  for (const command of ["python3.12", "python3.11", "python3.10"]) {
+    const result = spawnSync(command, ["--version"], {
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    if (result.status === 0) return { command, args: [] };
+  }
+  throw new Error(
+    "Python 3.12, 3.11, or 3.10 is required for the face-recognition backend. Install one or set up server/face-recognition/.venv.",
+  );
 }
 
 function resolveCli(packageName, relativeCliPath) {
@@ -155,7 +186,38 @@ function waitForPort(port, host = "127.0.0.1", timeoutMs = 45000) {
   });
 }
 
-function waitForHttp(url, timeoutMs = 45000) {
+function checkPortAvailable(port, host) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once("error", () => resolve(false));
+    server.listen(port, host, () => server.close(() => resolve(true)));
+  });
+}
+
+async function assertRequiredPortsAvailable() {
+  const required = [
+    { name: "Ganache", port: 7545, hosts: ["127.0.0.1"] },
+    { name: "FastAPI", port: 8000, hosts: ["127.0.0.1"] },
+    { name: "Vite", port: 8080, hosts: ["127.0.0.1", "::1"] },
+  ];
+  const busy = [];
+
+  for (const service of required) {
+    for (const host of service.hosts) {
+      if (!(await checkPortAvailable(service.port, host))) {
+        busy.push(`${service.name} port ${service.port} (${host})`);
+      }
+    }
+  }
+
+  if (busy.length > 0) {
+    throw new Error(
+      `Cannot start the demo because these required ports are already in use: ${busy.join(", ")}. Stop the existing project instance (Ctrl+C in its terminal) or close the process using those ports, then run make demo again.`,
+    );
+  }
+}
+
+function waitForHttp(url, serviceProcess, timeoutMs = 45000) {
   const startTime = Date.now();
   let lastLoggedSec = 0;
 
@@ -169,6 +231,15 @@ function waitForHttp(url, timeoutMs = 45000) {
         }
       } catch (_) {
         // The service may still be completing application startup.
+      }
+
+      if (serviceProcess.exitCode !== null || serviceProcess.signalCode !== null) {
+        reject(
+          new Error(
+            `Backend exited before ${url} became healthy (exit code ${serviceProcess.exitCode ?? "unknown"}). See the backend output above.`,
+          ),
+        );
+        return;
       }
 
       const elapsed = Date.now() - startTime;
@@ -261,12 +332,17 @@ async function main() {
     `${colors.bright}${colors.cyan}======================================================${colors.reset}\n`,
   );
 
+  // Fail before starting Ganache or deploying contracts if a previous demo
+  // instance (or another app) still owns one of the required ports.
+  await assertRequiredPortsAvailable();
+
   // 1. Start Ganache
   log(
     prefix.system,
     "Starting Ganache blockchain on port 7545 (networkId 1337)...",
   );
   const ganacheCli = resolveCli("ganache", path.join("dist", "node", "cli.js"));
+  const ganacheDataDir = path.join(rootDir, ".ganache", "demo-chain");
   const ganacheProc = spawnService(
     ganacheCli.command,
     [
@@ -276,6 +352,13 @@ async function main() {
       "--deterministic",
       "--networkId",
       "1337",
+      // Keep the local chain's block history when make demo is restarted.
+      // MetaMask may retain references to old block numbers for this network;
+      // resetting Ganache to genesis under the same chain ID makes those
+      // eth_getCode/eth_call requests fail with "header not found".
+      "--database.dbPath",
+      ganacheDataDir,
+      "--logging.verbose=false",
     ],
     { isCmd: ganacheCli.isCmd },
   );
@@ -333,14 +416,18 @@ async function main() {
   }
 
   // 3. Start Backend
-  const pythonExec = findPython();
+  const python = findPython();
+  const configuredAdminPassword = process.env.ADMIN_PASSWORD?.trim();
+  const adminPassword = configuredAdminPassword || randomBytes(24).toString("hex");
+  const adminUsername = process.env.ADMIN_USERNAME?.trim() || "admin_user";
   log(
     prefix.system,
-    `Starting Python FastAPI backend using [${pythonExec}]...`,
+    `Starting Python FastAPI backend using [${[python.command, ...python.args].join(" ")}]...`,
   );
   const backendProc = spawnService(
-    pythonExec,
+    python.command,
     [
+      ...python.args,
       "-m",
       "uvicorn",
       "main:app",
@@ -355,8 +442,9 @@ async function main() {
       cwd: path.join(rootDir, "server", "face-recognition"),
       env: {
         ...process.env,
+        ADMIN_USERNAME: adminUsername,
+        ADMIN_PASSWORD: adminPassword,
         BLOCKCHAIN_CONTRACT_ADDRESS: localContractAddress,
-        RESET_VOTING_CREDENTIALS_ON_START: "true",
         BLOCKCHAIN_RELAYER_PRIVATE_KEY:
           "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
       },
@@ -381,7 +469,7 @@ async function main() {
 
   log(prefix.system, "Waiting for FastAPI health check...");
   try {
-    await waitForHttp("http://127.0.0.1:8000/health");
+    await waitForHttp("http://127.0.0.1:8000/health", backendProc);
     log(prefix.system, "FastAPI backend is ready!");
   } catch (err) {
     log(
@@ -398,6 +486,9 @@ async function main() {
   const frontendProc = spawnService(viteCli.command, [...viteCli.args], {
     env: {
       ...process.env,
+      // The demo deploys to local Ganache, regardless of Sepolia values in .env.
+      VITE_NETWORK_ID: "1337",
+      VITE_CONTRACT_ADDRESS: localContractAddress,
       VITE_CONFIG_NATIVE_IGNORE_WARNING: "true",
     },
     isCmd: viteCli.isCmd,
@@ -417,6 +508,14 @@ async function main() {
   console.log(
     `  - Ganache:  ${colors.cyan}http://localhost:7545${colors.reset}`,
   );
+  if (!configuredAdminPassword) {
+    console.log(
+      `  - Local demo admin: ${colors.cyan}${adminUsername}${colors.reset} / ${colors.cyan}${adminPassword}${colors.reset}`,
+    );
+    console.log(
+      `    This password is temporary and will change the next time you run the demo.`,
+    );
+  }
   console.log(
     `\n${colors.yellow}Press Ctrl+C to stop all services.${colors.reset}\n`,
   );
