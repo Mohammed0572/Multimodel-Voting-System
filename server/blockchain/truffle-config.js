@@ -1,5 +1,6 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+let testProvider;
 
 module.exports = {
   contracts_directory: path.join(__dirname, "contracts"),
@@ -8,6 +9,16 @@ module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // for more about customizing your Truffle configuration!
   networks: {
+    test: {
+      provider: () => {
+        if (!testProvider) {
+          const ganache = require('ganache');
+          testProvider = ganache.provider({ logging: { quiet: true } });
+        }
+        return testProvider;
+      },
+      network_id: "*"
+    },
     development: {
       host: "127.0.0.1",
       port: 7545,

@@ -219,6 +219,7 @@ const Voting = () => {
   const profileFields = [
     { label: "Name", value: session?.name || "Not available", icon: User },
     { label: "USN", value: session?.usn || "Not available", icon: IdCard },
+    { label: "Date of birth", value: session?.dob || "Not available", icon: BadgeCheck },
     {
       label: "Branch",
       value: session?.branch || "Not available",
