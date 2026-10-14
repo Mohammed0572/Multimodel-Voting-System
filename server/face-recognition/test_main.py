@@ -8,9 +8,10 @@ import numpy as np
 import cv2
 
 # Set required environment variable before importing main
-os.environ["FASTAPI_SECRET_KEY"] = "supersecretkey"
+os.environ["FASTAPI_SECRET_KEY"] = "test-secret-key-with-at-least-thirty-two-bytes"
 os.environ["ADMIN_USERNAME"] = "admin_user"
 os.environ["ADMIN_PASSWORD"] = "securepassword123"
+os.environ["REDIS_URL"] = "memory://"
 
 import main
 from main import (
@@ -18,7 +19,6 @@ from main import (
     get_db,
     validate_face_image_quality,
     validate_embedding,
-    create_liveness_challenge,
     _relayer_configuration,
 )
 
@@ -33,6 +33,9 @@ def _make_valid_image_b64() -> str:
 
 VALID_IMAGE = _make_valid_image_b64()
 VALID_IMAGES_5 = [VALID_IMAGE] * 5
+CHALLENGE_FRAME_COUNT = 8
+VALID_CHALLENGE_IMAGES = [VALID_IMAGE] * CHALLENGE_FRAME_COUNT
+LIVE_YAW_SEQUENCE = [0.0, -0.2, -0.2, 0.0, 0.2, 0.2, 0.0, 0.2]
 
 import tempfile
 
@@ -45,6 +48,12 @@ def setup_database():
     os.close(fd)
     main.DB_PATH = temp_path
     main.init_db()
+    main._LIVENESS_CHALLENGES.clear()
+
+    limiter = getattr(app.state, "limiter", None)
+    storage = getattr(limiter, "_storage", None)
+    if storage is not None:
+        storage.reset()
 
     # Seed the admin user manually to bypass lifespan
     with get_db() as conn:
@@ -65,6 +74,34 @@ def setup_database():
 
 def get_admin_token():
     return main.create_jwt("admin", "admin")
+
+
+def issue_liveness_challenge(client, voter_id):
+    response = client.get(
+        "/api/v1/liveness/challenge",
+        params={"voter_id": voter_id},
+    )
+    assert response.status_code == 200
+    return response.json()["challenge_id"]
+
+
+def make_landmarks(yaw):
+    return {
+        "left_eye": [(30, 40)] * 6,
+        "right_eye": [(70, 40)] * 6,
+        "nose_tip": [(50 + yaw * 40, 55)] * 5,
+    }
+
+
+def mock_live_capture(mock_details, mock_ear, yaw_sequence=LIVE_YAW_SEQUENCE):
+    embedding = np.ones(128, dtype=np.float32)
+    mock_details.side_effect = [
+        (embedding.copy(), make_landmarks(yaw)) for yaw in yaw_sequence
+    ]
+    eye_ratios = [0.3] * len(yaw_sequence)
+    for start in range(0, len(eye_ratios), CHALLENGE_FRAME_COUNT):
+        eye_ratios[start : start + 3] = [0.3, 0.2, 0.3]
+    mock_ear.side_effect = [ratio for ratio in eye_ratios for _ in range(2)]
 
 
 def test_health():
@@ -144,13 +181,17 @@ def test_register_user_persists_and_can_verify_after_restart(mock_embed):
          patch("main.compare_faces") as mock_compare, \
          patch("main.calculate_ear") as mock_ear, \
          TestClient(app) as restarted_client:
-        mock_details.return_value = (np.ones(128, dtype=np.float32), {"left_eye": [], "right_eye": []})
+        mock_live_capture(mock_details, mock_ear)
         mock_compare.return_value = (True, 0.0)
-        mock_ear.side_effect = [0.3, 0.3, 0.2, 0.2]
 
+        challenge_id = issue_liveness_challenge(restarted_client, "1KG23CB052")
         verify_response = restarted_client.post(
             "/api/v1/verify-face",
-            json={"voter_id": "1KG23CB052", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+            json={
+                "voter_id": "1KG23CB052",
+                "challenge_id": challenge_id,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
         )
 
     assert verify_response.status_code == 200
@@ -162,9 +203,8 @@ def test_register_user_persists_and_can_verify_after_restart(mock_embed):
 @patch("main.calculate_ear")
 def test_verify_face_success(mock_ear, mock_compare, mock_details):
     # Return embedding and dummy landmarks
-    mock_details.return_value = (np.ones(128, dtype=np.float32), {"left_eye": [], "right_eye": []})
+    mock_live_capture(mock_details, mock_ear)
     mock_compare.return_value = (True, 0.0)
-    mock_ear.side_effect = [0.3, 0.3, 0.2, 0.2]
 
     with patch("main.get_enrollment_embedding") as mock_enroll, TestClient(app) as client:
         mock_enroll.return_value = np.ones(128, dtype=np.float32)
@@ -177,14 +217,63 @@ def test_verify_face_success(mock_ear, mock_compare, mock_details):
         )
 
         # 2. Verify
+        challenge_id = issue_liveness_challenge(client, "voter_1")
         response = client.post(
             "/api/v1/verify-face",
-            json={"voter_id": "voter_1", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+            json={
+                "voter_id": "voter_1",
+                "challenge_id": challenge_id,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
         )
         assert response.status_code == 200
         assert "auth_token" in response.cookies
         assert response.cookies["auth_token"] is not None
         assert response.json()["voter_id"] == "voter_1"
+
+        replayed = client.post(
+            "/api/v1/verify-face",
+            json={
+                "voter_id": "voter_1",
+                "challenge_id": challenge_id,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
+        )
+        assert replayed.status_code == 401
+        assert "already used" in replayed.json()["detail"]
+
+
+@patch("main.get_face_details")
+@patch("main.compare_faces")
+@patch("main.calculate_ear")
+def test_static_face_capture_is_rejected(mock_ear, mock_compare, mock_details):
+    mock_live_capture(
+        mock_details,
+        mock_ear,
+        yaw_sequence=[0.0] * CHALLENGE_FRAME_COUNT,
+    )
+    mock_compare.return_value = (True, 0.0)
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO voters (voter_id, role, face_encoding, id_verified) VALUES (?, ?, ?, ?)",
+            ("static_voter", "user", json.dumps(np.ones(128).tolist()), 1),
+        )
+        conn.commit()
+
+    with TestClient(app) as client:
+        challenge_id = issue_liveness_challenge(client, "static_voter")
+        response = client.post(
+            "/api/v1/verify-face",
+            json={
+                "voter_id": "static_voter",
+                "challenge_id": challenge_id,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
+        )
+
+    assert response.status_code == 401
+    assert "head movement" in response.json()["detail"]
+    assert "auth_token" not in response.cookies
 
 
 def test_enroll_requires_admin():
@@ -215,12 +304,12 @@ def test_verify_face_rate_limiting():
         for _ in range(5):
             response = client.post(
                 "/api/v1/verify-face",
-                json={"voter_id": "test_user", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+                json={"voter_id": "test_user", "challenge_id": "unused", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
             )
             assert response.status_code != 429
         response = client.post(
             "/api/v1/verify-face",
-            json={"voter_id": "test_user", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+            json={"voter_id": "test_user", "challenge_id": "unused", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
         )
         assert response.status_code == 429
         assert "Too many requests" in response.json()["detail"]
@@ -246,9 +335,8 @@ def test_admin_login():
 @patch("main.compare_faces")
 @patch("main.calculate_ear")
 def test_logout_allows_login_with_new_voting_credential(mock_ear, mock_compare, mock_details):
-    mock_details.return_value = (np.ones(128, dtype=np.float32), {"left_eye": [], "right_eye": []})
+    mock_live_capture(mock_details, mock_ear, yaw_sequence=LIVE_YAW_SEQUENCE * 2)
     mock_compare.return_value = (True, 0.0)
-    mock_ear.side_effect = [0.3, 0.3, 0.2, 0.2, 0.3, 0.3, 0.2, 0.2]
 
     with patch("main.get_enrollment_embedding") as mock_enroll, TestClient(app) as client:
         mock_enroll.return_value = np.ones(128, dtype=np.float32)
@@ -264,9 +352,14 @@ def test_logout_allows_login_with_new_voting_credential(mock_ear, mock_compare, 
             )
             conn.commit()
 
+        first_challenge = issue_liveness_challenge(client, "logout_user")
         first_login = client.post(
             "/api/v1/verify-face",
-            json={"voter_id": "logout_user", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+            json={
+                "voter_id": "logout_user",
+                "challenge_id": first_challenge,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
         )
         first_credential = first_login.cookies.get(main._CREDENTIAL_COOKIE)
         assert first_login.status_code == 200
@@ -276,11 +369,16 @@ def test_logout_allows_login_with_new_voting_credential(mock_ear, mock_compare, 
         logout = client.post("/api/v1/auth/logout")
         assert logout.status_code == 200
 
+        second_challenge = issue_liveness_challenge(client, "logout_user")
         second_login = client.post(
             "/api/v1/verify-face",
-            json={"voter_id": "logout_user", "images_base64": [VALID_IMAGE, VALID_IMAGE]},
+            json={
+                "voter_id": "logout_user",
+                "challenge_id": second_challenge,
+                "images_base64": VALID_CHALLENGE_IMAGES,
+            },
         )
-        assert second_login.status_code == 200
+        assert second_login.status_code == 200, second_login.text
         assert second_login.cookies.get(main._CREDENTIAL_COOKIE)
         assert second_login.cookies.get(main._CREDENTIAL_COOKIE) != first_credential
 
@@ -325,9 +423,13 @@ def test_validate_embedding():
 
 def test_liveness_challenge_endpoint():
     with TestClient(app) as client:
-        response = client.get("/api/v1/liveness/challenge")
+        response = client.get(
+            "/api/v1/liveness/challenge",
+            params={"voter_id": "voter_1"},
+        )
         assert response.status_code == 200
         data = response.json()
-        assert data["challenge"] in ["blink", "turn_left", "turn_right", "smile"]
+        assert data["challenge"] == "turn_side_to_side_and_blink"
         assert "challenge_id" in data
+        assert "instruction" in data
         assert data["expires_in"] == 30

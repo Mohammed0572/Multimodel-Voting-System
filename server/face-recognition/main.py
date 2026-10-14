@@ -91,9 +91,7 @@ EAR_MIN_OPEN: float = settings.EAR_MIN_OPEN
 # Redis connection string — read from env, fall back to localhost
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
-ENCODINGS_PKL_PATH = (
-    Path(__file__).resolve().parent.parent / "face_recognition" / "encodings.pkl"
-)
+ENCODINGS_PKL_PATH = Path(__file__).resolve().with_name("encodings.pkl")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -978,6 +976,38 @@ def _has_blink_sequence(eye_samples: list[tuple[Optional[float], Optional[float]
     return False
 
 
+def _normalized_face_yaw(landmarks: dict[str, list[tuple[int, int]]]) -> Optional[float]:
+    """Estimate relative face yaw from nose position between the eyes."""
+    left_eye = landmarks.get("left_eye", [])
+    right_eye = landmarks.get("right_eye", [])
+    nose_tip = landmarks.get("nose_tip", [])
+    if not left_eye or not right_eye or not nose_tip:
+        return None
+
+    left_center = np.mean(np.asarray(left_eye, dtype=np.float64), axis=0)
+    right_center = np.mean(np.asarray(right_eye, dtype=np.float64), axis=0)
+    eye_span = float(np.linalg.norm(right_center - left_center))
+    if eye_span < 1:
+        return None
+
+    eye_midpoint_x = float((left_center[0] + right_center[0]) / 2)
+    nose_midpoint_x = float(np.mean(np.asarray(nose_tip, dtype=np.float64)[:, 0]))
+    return (nose_midpoint_x - eye_midpoint_x) / eye_span
+
+
+def _has_head_turn_sequence(yaw_samples: list[Optional[float]]) -> bool:
+    """Require a measurable head turn during the fresh camera capture."""
+    values = [value for value in yaw_samples if value is not None and np.isfinite(value)]
+    if len(values) < 6:
+        return False
+
+    first_third = values[: max(2, len(values) // 3)]
+    last_third = values[-max(2, len(values) // 3) :]
+    excursion = max(values) - min(values)
+    endpoint_change = abs(float(np.median(last_third)) - float(np.median(first_third)))
+    return excursion >= 0.16 and endpoint_change >= 0.10
+
+
 def compare_faces(
     known_encoding: np.ndarray,
     test_encoding: np.ndarray,
@@ -993,12 +1023,7 @@ _LIVENESS_CHALLENGES: dict[str, dict] = {}
 
 
 def create_liveness_challenge() -> str:
-    return secrets.choice([
-        "blink",
-        "turn_left",
-        "turn_right",
-        "smile",
-    ])
+    return "turn_side_to_side_and_blink"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1153,6 +1178,7 @@ app.add_middleware(
 
 class FaceVerifyRequest(BaseModel):
     voter_id: str
+    challenge_id: str
     images_base64: list[str]
 
     @field_validator("images_base64")
@@ -1170,6 +1196,14 @@ class FaceVerifyRequest(BaseModel):
             raise ValueError("voter_id must not be empty.")
         if len(cleaned) > 100:
             raise ValueError("voter_id must be 100 characters or fewer.")
+        return cleaned
+
+    @field_validator("challenge_id")
+    @classmethod
+    def challenge_id_must_not_be_empty(cls, v: str) -> str:
+        cleaned = v.strip()
+        if not cleaned or len(cleaned) > 128:
+            raise ValueError("A valid liveness challenge is required.")
         return cleaned
 
 
@@ -1425,11 +1459,30 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
 async def verify_face(request: Request, payload: FaceVerifyRequest):
     """
     Authenticate a voter by comparing a webcam sequence against the stored
-    128D face encoding, with EAR-based blink liveness detection.
+    128D face encoding, with a one-use challenge, head-turn sequence, and blink.
 
     Rate limited: 5 requests/minute per IP.
     """
     voter_id = payload.voter_id.strip().lower()
+
+    challenge = _LIVENESS_CHALLENGES.pop(payload.challenge_id, None)
+    if challenge is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="The live check is missing or already used. Start verification again.",
+        )
+    age_seconds = (
+        datetime.now(timezone.utc) - challenge["created_at"]
+    ).total_seconds()
+    if (
+        age_seconds > challenge["expires_in"]
+        or challenge["voter_id"] != voter_id
+        or challenge["challenge"] != "turn_side_to_side_and_blink"
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="The live check expired or does not match this voter. Start verification again.",
+        )
 
     # Check that this voter has a face profile before spending time decoding
     # frames. The CSBS roster is preloaded with empty templates until signup.
@@ -1465,10 +1518,10 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
             detail="The saved face profile is invalid. Please register your face again.",
         )
 
-    if len(payload.images_base64) < 2:
+    if len(payload.images_base64) < 8:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Liveness detection requires a sequence of images (at least 2).",
+            detail="The live check needs a longer camera sequence. Please try again.",
         )
 
     identity_frame_indexes = {0, len(payload.images_base64) - 1}
@@ -1535,13 +1588,21 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     eye_samples: list[tuple[Optional[float], Optional[float]]] = [
         (None, None) for _ in payload.images_base64
     ]
+    yaw_samples: list[Optional[float]] = [None for _ in payload.images_base64]
     for index, _, (_, landmarks) in usable_frames:
         left_ear = calculate_ear(landmarks["left_eye"]) if "left_eye" in landmarks else None
         right_ear = calculate_ear(landmarks["right_eye"]) if "right_eye" in landmarks else None
         eye_samples[index] = (left_ear, right_ear)
+        yaw_samples[index] = _normalized_face_yaw(landmarks)
 
-    # Liveness: require a relative blink sequence rather than absolute EAR
-    # cutoffs, which vary by anatomy, camera angle, and low-light image quality.
+    if not _has_head_turn_sequence(yaw_samples):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="I couldn’t confirm the head movement. Turn gently side to side while the camera captures, then try again.",
+        )
+
+    # Require a relative blink sequence rather than absolute EAR cutoffs,
+    # which vary by anatomy, camera angle, and low-light image quality.
     if sum(any(value is not None for value in sample) for sample in eye_samples) < 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -2037,19 +2098,34 @@ async def voter_eligibility(request: Request):
 
 @app.get("/api/v1/liveness/challenge")
 @limiter.limit("20/minute")
-async def liveness_challenge(request: Request):
-    """Return a single-use random liveness challenge expiring in 30 seconds."""
+async def liveness_challenge(request: Request, voter_id: str):
+    """Issue a voter-bound, single-use liveness challenge expiring in 30 seconds."""
+    normalized_voter_id = voter_id.strip().lower()
+    if not normalized_voter_id or len(normalized_voter_id) > 100:
+        raise HTTPException(status_code=400, detail="Enter a valid Voter ID first.")
+
+    now = datetime.now(timezone.utc)
+    expired_ids = [
+        challenge_id
+        for challenge_id, challenge in _LIVENESS_CHALLENGES.items()
+        if (now - challenge["created_at"]).total_seconds() > challenge["expires_in"]
+    ]
+    for challenge_id in expired_ids:
+        _LIVENESS_CHALLENGES.pop(challenge_id, None)
+
     challenge = create_liveness_challenge()
-    challenge_id = secrets.token_hex(16)
+    challenge_id = secrets.token_urlsafe(32)
     _LIVENESS_CHALLENGES[challenge_id] = {
         "challenge": challenge,
-        "created_at": datetime.now(timezone.utc),
+        "voter_id": normalized_voter_id,
+        "created_at": now,
         "expires_in": 30,
     }
     return {
         "challenge": challenge,
         "challenge_id": challenge_id,
         "expires_in": 30,
+        "instruction": "When the camera starts capturing, keep it still, gently turn your head a little left then right, and blink once. Small movement is enough.",
     }
 
 

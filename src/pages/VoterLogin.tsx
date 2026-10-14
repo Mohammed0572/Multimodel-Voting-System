@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth, API_BASE } from "../context/AuthContext";
-import { getFaceLandmarker, watchForBlink } from "../lib/blinkDetector";
 import {
   announceVoiceMessage,
   isVoiceAssistantEnabled,
@@ -58,7 +57,7 @@ const VoterLogin = () => {
           ? "Lighting is low. Face a window or lamp; your face should be clearly visible."
           : brightness > 225
             ? "The camera looks overexposed. Turn away from direct light."
-            : "Lighting looks good. Keep your face centered and blink once.",
+            : "Lighting looks good. Keep your face centered for the live movement check.",
       );
     }, 500);
 
@@ -89,7 +88,7 @@ const VoterLogin = () => {
     }
   };
 
-  const captureFixedIntervalFrames = async (
+  const captureLivenessSequence = async (
     video: HTMLVideoElement,
     canvas: HTMLCanvasElement,
   ): Promise<string[]> => {
@@ -99,11 +98,16 @@ const VoterLogin = () => {
         "The browser could not prepare the camera capture. Please try again.",
       );
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const maxFrameDimension = 720;
+    const scale = Math.min(
+      1,
+      maxFrameDimension / Math.max(video.videoWidth, video.videoHeight),
+    );
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
     const frames: string[] = [];
-    const maxFrames = 6;
-    const frameDelayMs = 160;
+    const maxFrames = 8;
+    const frameDelayMs = 140;
     for (let index = 0; index < maxFrames; index += 1) {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push(canvas.toDataURL("image/jpeg", 0.72));
@@ -153,11 +157,8 @@ const VoterLogin = () => {
         await videoRef.current.play().catch(() => undefined);
       }
       setIsCameraActive(true);
-      getFaceLandmarker().catch((error) => {
-        console.warn("Blink-detection model failed to preload:", error);
-      });
       updateStatus(
-        "Camera active. Center your face, then verify your identity.",
+        "Camera active. When you tap Verify, gently turn your head a little left and right, then blink once during the short capture. Keep the camera still.",
         "info",
       );
     } catch (error) {
@@ -207,38 +208,34 @@ const VoterLogin = () => {
     }
 
     setIsProcessing(true);
-    updateStatus("Watching for a natural blink…");
+    updateStatus("Starting a fresh live check…");
 
     try {
-      let frames: string[];
-      try {
-        const result = await watchForBlink(video, canvas, {
-          timeoutMs: 6000,
-          jpegQuality: 0.72,
-          onStatus: (message) => updateStatus(message),
-        });
-        frames = result.frames;
-        if (!result.blinkConfirmed) {
-          updateStatus(
-            "Checking the captured frames now. Keep your face centered and blink once during verification.",
-          );
-        }
-      } catch (error) {
-        console.warn(
-          "Real-time blink detection unavailable, using fallback capture:",
-          error,
+      const challengeResponse = await fetch(
+        `${API_BASE}/liveness/challenge?voter_id=${encodeURIComponent(normalizedVoterId)}`,
+        { credentials: "include" },
+      );
+      const challengeData = await challengeResponse.json().catch(() => ({}));
+      if (!challengeResponse.ok || !challengeData.challenge_id) {
+        throw new Error(
+          challengeData.detail || "Could not start the live check. Please try again.",
         );
-        updateStatus("Recording liveness data… Please blink naturally.");
-        frames = await captureFixedIntervalFrames(video, canvas);
       }
 
-      updateStatus("Verifying identity securely…");
+      updateStatus(
+        challengeData.instruction ||
+          "When the camera starts capturing, keep it still, gently turn your head a little left then right, and blink once. Small movement is enough.",
+      );
+      const frames = await captureLivenessSequence(video, canvas);
+
+      updateStatus("Checking the live movement, blink, and face match…");
       const response = await fetch(`${API_BASE}/verify-face`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           voter_id: normalizedVoterId,
+          challenge_id: challengeData.challenge_id,
           images_base64: frames,
         }),
       });
@@ -379,6 +376,12 @@ const VoterLogin = () => {
                 </div>
               )}
             </div>
+            <p className="mt-2 rounded-sm border border-india-blue/20 bg-india-blue-lt px-3 py-2 text-xs leading-relaxed text-india-blue">
+              <strong>When to move:</strong> Tap Verify, then during the short
+              capture gently turn your head a little left and right and blink
+              once. Keep the camera still; a small, comfortable movement is
+              enough.
+            </p>
             {isCameraActive && lightingMessage && (
               <p
                 className={`mt-2 text-xs ${lightingMessage.startsWith("Lighting is low") || lightingMessage.startsWith("The camera looks") ? "text-amber-700" : "text-india-green"}`}

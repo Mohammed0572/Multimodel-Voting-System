@@ -77,6 +77,7 @@ install-node:
 
 install-python:
 	@echo "[*] Installing Python backend dependencies..."
+	$(BACKEND_PY) -c "import sys; assert sys.version_info[:2] in ((3, 10), (3, 11), (3, 12)), f'Python 3.10–3.12 is required; found {sys.version.split()[0]}'"
 	$(CREATE_PYTHON_VENV)
 	$(PYTHON_VENV) -m pip install -r server/face-recognition/requirements.txt
 	$(PYTHON_VENV) -m pip install --no-deps "face-recognition>=1.3.0"
@@ -124,7 +125,7 @@ test-frontend:
 
 test-backend:
 	@echo "[*] Running Python backend tests..."
-	pytest server/face-recognition
+	$(BACKEND_PY) -m pytest server/face-recognition -q
 
 test-contracts:
 	@echo "[*] Running smart contract tests..."
