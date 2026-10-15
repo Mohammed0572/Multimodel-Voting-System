@@ -7,6 +7,7 @@ import Registration from './pages/Registration';
 import AdminLogin from './pages/AdminLogin';
 import Admin from './pages/Admin';
 import Voting from './pages/Voting';
+import Analytics from './pages/Analytics';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 import Accessibility from './pages/Accessibility';
@@ -25,6 +26,8 @@ function App() {
             <Navbar />
             <Routes>
               <Route path="/" element={<Home />} />
+              <Route path="/results" element={<Analytics />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/login" element={<VoterLogin />} />
               <Route path="/register" element={<Registration />} />
             <Route element={<ProtectedRoute allowedRole="user" />}>

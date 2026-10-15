@@ -22,6 +22,8 @@ export default defineConfig({
     strictPort: true,
     watch: {
       ignored: [
+        '**/.ganache/**',
+        '**/.venv/**',
         '**/server/**',
         '**/*.sqlite*',
         '**/*.sqlite-wal',

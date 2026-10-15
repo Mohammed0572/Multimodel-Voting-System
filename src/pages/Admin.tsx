@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { useWeb3 } from "../context/Web3Context";
 import { useLanguage } from "../context/LanguageContext";
 import { API_BASE } from "../context/AuthContext";
+import {
+  generateAuditPdf,
+  downloadAuditJson,
+  AuditReportData,
+} from "../services/auditReportGenerator";
 
 type Status = { message: string; type: string };
 
@@ -50,6 +56,7 @@ const Admin = () => {
   const [isLoadingResults, setIsLoadingResults] = useState(true);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [isExportingAudit, setIsExportingAudit] = useState(false);
 
   const loadState = useCallback(async () => {
     try {
@@ -532,6 +539,47 @@ const Admin = () => {
     }
   };
 
+  const fetchAuditData = async (): Promise<AuditReportData> => {
+    const response = await fetch(`${API_BASE}/admin/election/audit`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.detail || "Unable to retrieve cryptographic audit data.");
+    }
+    return (await response.json()) as AuditReportData;
+  };
+
+  const handleExportAuditPdf = async () => {
+    setIsExportingAudit(true);
+    try {
+      updateStatus("Generating signed cryptographic election audit report...", "info");
+      const auditData = await fetchAuditData();
+      generateAuditPdf(auditData);
+      updateStatus("Official Cryptographic Audit Report (PDF) downloaded!", "success");
+    } catch (err: any) {
+      console.error(err);
+      updateStatus(err.message || "Failed to generate audit report PDF.", "error");
+    } finally {
+      setIsExportingAudit(false);
+    }
+  };
+
+  const handleExportAuditJson = async () => {
+    setIsExportingAudit(true);
+    try {
+      updateStatus("Fetching machine-readable cryptographic audit package...", "info");
+      const auditData = await fetchAuditData();
+      downloadAuditJson(auditData);
+      updateStatus("Machine-readable audit JSON downloaded!", "success");
+    } catch (err: any) {
+      console.error(err);
+      updateStatus(err.message || "Failed to export audit JSON.", "error");
+    } finally {
+      setIsExportingAudit(false);
+    }
+  };
+
   const filteredStudents = useMemo(() => {
     const query = studentSearch.trim().toLowerCase();
     if (!query) return students;
@@ -707,6 +755,120 @@ const Admin = () => {
         <p className="px-4 pb-4 text-xs text-slate-500">
           Refresh this table manually during voting; it updates after the election ends. It shows totals only, not voter identities or individual ballots.
         </p>
+      </section>
+
+      {/* Cryptographic Election Audit & Official Reports Section */}
+      <section
+        className={`gov-card mt-8 border-2 ${
+          electionState === 2
+            ? "border-amber-300 bg-linear-to-br from-amber-50/50 via-white to-amber-50/30"
+            : "border-slate-200"
+        }`}
+        aria-label="Cryptographic Audit and Election Reports"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-ashoka/10 text-ashoka">
+              <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold font-heading text-[#112e51]">
+                Cryptographic Election Audit & Official Reports
+              </h2>
+              <p className="text-xs text-slate-500">
+                Official Election Commission signed audit package with block hashes, transaction receipts, and digital signature
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExportAuditPdf}
+              disabled={isExportingAudit}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#0b1f3a] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#ff671f] transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              {isExportingAudit ? "Generating PDF…" : "Export Official Audit Report (PDF)"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportAuditJson}
+              disabled={isExportingAudit}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download Audit JSON
+            </button>
+
+            <Link
+              to="/results"
+              target="_blank"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-ashoka hover:underline ml-1"
+            >
+              <span>View Public Dashboard</span>
+              <svg className="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider block text-[10px]">
+                Cryptographic Audit Scheme
+              </span>
+              <span className="font-bold text-slate-800 text-sm mt-1 block">
+                SHA-256 Digest + ECDSA Signatures
+              </span>
+              <span className="text-slate-500 text-[11px] mt-1 block">
+                Certifies block hashes & transaction receipts
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider block text-[10px]">
+                Election Relayer Authority
+              </span>
+              <span className="font-mono text-slate-800 text-xs mt-1 block truncate" title={contractOwner || "Relayer"}>
+                {contractOwner || "Connected to Smart Contract"}
+              </span>
+              <span className="text-slate-500 text-[11px] mt-1 block">
+                Official signer for confirmed ballots
+              </span>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <span className="font-semibold text-slate-500 uppercase tracking-wider block text-[10px]">
+                Ballot Privacy Guarantee
+              </span>
+              <span className="font-bold text-emerald-700 text-sm mt-1 block">
+                One-Way Credential Hashing
+              </span>
+              <span className="text-slate-500 text-[11px] mt-1 block">
+                Prevents double-voting without linking USN
+              </span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section

@@ -64,6 +64,10 @@ export default function Navbar() {
             </div>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-ink md:flex">
+            <Link to="/results" className="hover:text-saffron font-medium inline-flex items-center gap-1.5 text-ashoka">
+              <span className="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Results
+            </Link>
             {session && session.role === 'user' && (
               <Link to="/voting" className="hover:text-saffron">{t('layout.cast_vote')}</Link>
             )}

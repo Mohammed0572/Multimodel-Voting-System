@@ -433,3 +433,79 @@ def test_liveness_challenge_endpoint():
         assert "challenge_id" in data
         assert "instruction" in data
         assert data["expires_in"] == 30
+
+
+def test_election_analytics_public_endpoint():
+    with TestClient(app) as client:
+        # Seed a test voter
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO voters (voter_id, role, face_encoding, id_verified) VALUES (?, ?, ?, ?)",
+                ("analytics_voter_1", "user", "", 1),
+            )
+            conn.commit()
+
+        response = client.get("/api/v1/election/analytics")
+        assert response.status_code == 200
+        data = response.json()
+        assert "election_id" in data
+        assert "election_name" in data
+        assert "state" in data
+        assert "turnout" in data
+        assert "total_registered" in data["turnout"]
+        assert "total_verified" in data["turnout"]
+        assert "candidates" in data
+        assert isinstance(data["candidates"], list)
+
+
+def test_admin_election_audit_requires_admin():
+    with TestClient(app) as client:
+        # Unauthenticated
+        res = client.get("/api/v1/admin/election/audit")
+        assert res.status_code == 401
+
+
+def test_admin_election_audit_returns_signed_report():
+    with TestClient(app) as client:
+        token = get_admin_token()
+        # Seed a voter and a consumed credential for audit log testing
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO voters (voter_id, role, face_encoding, id_verified) VALUES (?, ?, ?, ?)",
+                ("audit_voter_1", "user", "", 1),
+            )
+            conn.execute(
+                """
+                INSERT INTO voting_credentials (credential_hash, voter_id, election_id, issued_at, expires_at, consumed_at, tx_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    "hash_abc_123",
+                    "audit_voter_1",
+                    main._current_election_id(),
+                    "2026-10-15T12:00:00Z",
+                    "2026-10-15T12:15:00Z",
+                    "2026-10-15T12:05:00Z",
+                    "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+                ),
+            )
+            conn.commit()
+
+        res = client.get(
+            "/api/v1/admin/election/audit",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert "audit_digest" in data
+        assert data["audit_digest"].startswith("0x")
+        assert "signature" in data
+        assert "signature_algorithm" in data
+        assert "turnout_stats" in data
+        assert "transaction_logs" in data
+        assert len(data["transaction_logs"]) >= 1
+        log_entry = data["transaction_logs"][0]
+        assert "tx_hash" in log_entry
+        assert "block_number" in log_entry
+        assert "block_hash" in log_entry
+        assert "credential_hash" in log_entry

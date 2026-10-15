@@ -49,6 +49,12 @@ export default function Home() {
               >
                 Register ID Card
               </Link>
+              <Link
+                to="/results"
+                className="inline-flex items-center gap-2 rounded-md border border-ashoka/30 bg-ashoka/5 px-6 py-3 text-sm font-semibold text-ashoka shadow-sm hover:bg-ashoka/10"
+              >
+                Live Results
+              </Link>
               <a
                 href="#how"
                 className="inline-flex items-center gap-2 rounded-md border border-ink/20 px-6 py-3 text-sm font-semibold text-ink hover:border-ink"

@@ -77,7 +77,7 @@ install-node:
 
 install-python:
 	@echo "[*] Installing Python backend dependencies..."
-	$(BACKEND_PY) -c "import sys; assert sys.version_info[:2] in ((3, 10), (3, 11), (3, 12)), f'Python 3.10–3.12 is required; found {sys.version.split()[0]}'"
+	$(BACKEND_PY) -c "import sys; assert sys.version_info >= (3, 10), f'Python >= 3.10 is required; found {sys.version.split()[0]}'"
 	$(CREATE_PYTHON_VENV)
 	$(PYTHON_VENV) -m pip install -r server/face-recognition/requirements.txt
 	$(PYTHON_VENV) -m pip install --no-deps "face-recognition>=1.3.0"
@@ -139,7 +139,7 @@ docker-down:
 	@echo "[*] Stopping Docker Compose stack..."
 	docker compose -f server/docker-compose.yml down
 
-demo: install-node install-python
+demo:
 	@node scripts/start-demo.mjs
 
 clean:
