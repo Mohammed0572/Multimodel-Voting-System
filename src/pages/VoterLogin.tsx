@@ -91,6 +91,7 @@ const VoterLogin = () => {
   const captureLivenessSequence = async (
     video: HTMLVideoElement,
     canvas: HTMLCanvasElement,
+    onProgress: (message: string) => void,
   ): Promise<string[]> => {
     const context = canvas.getContext("2d");
     if (!context) {
@@ -106,9 +107,12 @@ const VoterLogin = () => {
     canvas.width = Math.round(video.videoWidth * scale);
     canvas.height = Math.round(video.videoHeight * scale);
     const frames: string[] = [];
-    const maxFrames = 8;
-    const frameDelayMs = 140;
+    // Sample long enough to catch a natural blink without making login drag.
+    const maxFrames = 14;
+    const frameDelayMs = 100;
     for (let index = 0; index < maxFrames; index += 1) {
+      if (index === 3) onProgress("Blink once now; keep both eyes visible.");
+      if (index === 11) onProgress("Hold still; the capture is finishing…");
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push(canvas.toDataURL("image/jpeg", 0.72));
       if (index < maxFrames - 1) {
@@ -158,7 +162,7 @@ const VoterLogin = () => {
       }
       setIsCameraActive(true);
       updateStatus(
-        "Camera active. When you tap Verify, gently turn your head a little left and right, then blink once during the short capture. Keep the camera still.",
+        "Camera active. Tap Verify, keep your face centered, and blink once when the on-screen cue appears.",
         "info",
       );
     } catch (error) {
@@ -224,11 +228,14 @@ const VoterLogin = () => {
 
       updateStatus(
         challengeData.instruction ||
-          "When the camera starts capturing, keep it still, gently turn your head a little left then right, and blink once. Small movement is enough.",
+          "Keep your face centered. I’ll tell you when to blink.",
       );
-      const frames = await captureLivenessSequence(video, canvas);
+      const frames = await captureLivenessSequence(video, canvas, (message) => {
+        updateStatus(message);
+        if (message.startsWith("Blink once")) announceVoiceMessage(message);
+      });
 
-      updateStatus("Checking the live movement, blink, and face match…");
+      updateStatus("Checking the blink and face match…");
       const response = await fetch(`${API_BASE}/verify-face`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -377,10 +384,9 @@ const VoterLogin = () => {
               )}
             </div>
             <p className="mt-2 rounded-sm border border-india-blue/20 bg-india-blue-lt px-3 py-2 text-xs leading-relaxed text-india-blue">
-              <strong>When to move:</strong> Tap Verify, then during the short
-              capture gently turn your head a little left and right and blink
-              once. Keep the camera still; a small, comfortable movement is
-              enough.
+              <strong>When to blink:</strong> Tap Verify and keep your face
+              centered. The status message will cue one natural blink during
+              the short capture.
             </p>
             {isCameraActive && lightingMessage && (
               <p

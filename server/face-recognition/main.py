@@ -952,60 +952,50 @@ def calculate_ear(eye_points: list) -> float:
 
 
 def _has_blink_sequence(eye_samples: list[tuple[Optional[float], Optional[float]]]) -> bool:
-    """Confirm a relative open→closed→open change, tolerating eye-shape variance."""
-    min_open = max(0.17, EAR_MIN_OPEN * 0.70)
-    for eye_index in (0, 1):
-        values = [sample[eye_index] for sample in eye_samples]
-        for closed_index in range(1, len(values) - 1):
-            closed = values[closed_index]
-            if closed is None:
-                continue
-            earlier = [value for value in values[:closed_index] if value is not None]
-            later = [value for value in values[closed_index + 1:] if value is not None]
-            if not earlier or not later:
-                continue
-            open_before = max(earlier)
-            open_after = max(later)
-            if min(open_before, open_after) < min_open:
-                continue
-            open_level = min(open_before, open_after)
-            # Relative closure handles naturally small EAR values and imperfect
-            # lighting while still requiring a visible close-and-reopen motion.
-            if closed <= open_level * 0.82 and open_level - closed >= 0.035:
-                return True
-    return False
-
-
-def _normalized_face_yaw(landmarks: dict[str, list[tuple[int, int]]]) -> Optional[float]:
-    """Estimate relative face yaw from nose position between the eyes."""
-    left_eye = landmarks.get("left_eye", [])
-    right_eye = landmarks.get("right_eye", [])
-    nose_tip = landmarks.get("nose_tip", [])
-    if not left_eye or not right_eye or not nose_tip:
-        return None
-
-    left_center = np.mean(np.asarray(left_eye, dtype=np.float64), axis=0)
-    right_center = np.mean(np.asarray(right_eye, dtype=np.float64), axis=0)
-    eye_span = float(np.linalg.norm(right_center - left_center))
-    if eye_span < 1:
-        return None
-
-    eye_midpoint_x = float((left_center[0] + right_center[0]) / 2)
-    nose_midpoint_x = float(np.mean(np.asarray(nose_tip, dtype=np.float64)[:, 0]))
-    return (nose_midpoint_x - eye_midpoint_x) / eye_span
-
-
-def _has_head_turn_sequence(yaw_samples: list[Optional[float]]) -> bool:
-    """Require a measurable head turn during the fresh camera capture."""
-    values = [value for value in yaw_samples if value is not None and np.isfinite(value)]
-    if len(values) < 6:
+    """Require a clear, synchronized close-and-reopen in both eyes."""
+    if len(eye_samples) < 6:
         return False
 
-    first_third = values[: max(2, len(values) // 3)]
-    last_third = values[-max(2, len(values) // 3) :]
-    excursion = max(values) - min(values)
-    endpoint_change = abs(float(np.median(last_third)) - float(np.median(first_third)))
-    return excursion >= 0.16 and endpoint_change >= 0.10
+    min_open = max(0.18, EAR_MIN_OPEN * 0.70)
+    for closed_index in range(2, len(eye_samples) - 2):
+        closed_pair = eye_samples[closed_index]
+        if any(value is None or not np.isfinite(value) for value in closed_pair):
+            continue
+
+        # Ignore the samples immediately beside the candidate closure. This
+        # gives a natural blink room to span multiple frames while keeping the
+        # baseline resistant to one-frame landmark jitter from a still image.
+        before = eye_samples[max(0, closed_index - 4):closed_index - 1]
+        after = eye_samples[closed_index + 2:closed_index + 5]
+        if len(before) < 2 or len(after) < 2:
+            continue
+
+        passed_both_eyes = True
+        for eye_index in (0, 1):
+            before_values = [
+                frame[eye_index] for frame in before
+                if frame[eye_index] is not None and np.isfinite(frame[eye_index])
+            ]
+            after_values = [
+                frame[eye_index] for frame in after
+                if frame[eye_index] is not None and np.isfinite(frame[eye_index])
+            ]
+            if len(before_values) < 2 or len(after_values) < 2:
+                passed_both_eyes = False
+                break
+
+            open_level = min(float(np.median(before_values)), float(np.median(after_values)))
+            closed = float(closed_pair[eye_index])
+            # Require a substantial bilateral change; tiny changes in a static
+            # phone image are not enough to count as a blink.
+            if open_level < min_open or closed > open_level * 0.85 or open_level - closed < 0.03:
+                passed_both_eyes = False
+                break
+
+        if passed_both_eyes:
+            return True
+
+    return False
 
 
 def compare_faces(
@@ -1023,7 +1013,7 @@ _LIVENESS_CHALLENGES: dict[str, dict] = {}
 
 
 def create_liveness_challenge() -> str:
-    return "turn_side_to_side_and_blink"
+    return "blink_once"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1459,7 +1449,7 @@ async def admin_login(request: Request, body: AdminLoginRequest, response: Respo
 async def verify_face(request: Request, payload: FaceVerifyRequest):
     """
     Authenticate a voter by comparing a webcam sequence against the stored
-    128D face encoding, with a one-use challenge, head-turn sequence, and blink.
+    128D face encoding, with a one-use blink challenge.
 
     Rate limited: 5 requests/minute per IP.
     """
@@ -1477,7 +1467,7 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     if (
         age_seconds > challenge["expires_in"]
         or challenge["voter_id"] != voter_id
-        or challenge["challenge"] != "turn_side_to_side_and_blink"
+        or challenge["challenge"] != "blink_once"
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -1588,30 +1578,25 @@ async def verify_face(request: Request, payload: FaceVerifyRequest):
     eye_samples: list[tuple[Optional[float], Optional[float]]] = [
         (None, None) for _ in payload.images_base64
     ]
-    yaw_samples: list[Optional[float]] = [None for _ in payload.images_base64]
     for index, _, (_, landmarks) in usable_frames:
         left_ear = calculate_ear(landmarks["left_eye"]) if "left_eye" in landmarks else None
         right_ear = calculate_ear(landmarks["right_eye"]) if "right_eye" in landmarks else None
         eye_samples[index] = (left_ear, right_ear)
-        yaw_samples[index] = _normalized_face_yaw(landmarks)
-
-    if not _has_head_turn_sequence(yaw_samples):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="I couldn’t confirm the head movement. Turn gently side to side while the camera captures, then try again.",
-        )
-
     # Require a relative blink sequence rather than absolute EAR cutoffs,
     # which vary by anatomy, camera angle, and low-light image quality.
-    if sum(any(value is not None for value in sample) for sample in eye_samples) < 2:
+    valid_bilateral_frames = sum(
+        all(value is not None and np.isfinite(value) for value in sample)
+        for sample in eye_samples
+    )
+    if valid_bilateral_frames < 6:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Keep your full face visible and try again so the blink can be checked.",
+            detail="Keep both eyes clearly visible and look toward the camera so the blink can be checked.",
         )
     if not _has_blink_sequence(eye_samples):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="I couldn’t confirm a full blink. Keep your face centered, then blink once during capture.",
+            detail="I couldn’t confirm both eyes closing and reopening. Keep your face centered and blink once when prompted.",
         )
 
     embedding = base_embedding
@@ -2125,7 +2110,7 @@ async def liveness_challenge(request: Request, voter_id: str):
         "challenge": challenge,
         "challenge_id": challenge_id,
         "expires_in": 30,
-        "instruction": "When the camera starts capturing, keep it still, gently turn your head a little left then right, and blink once. Small movement is enough.",
+        "instruction": "Keep your face centered. When prompted, blink once during the short camera capture.",
     }
 
 
