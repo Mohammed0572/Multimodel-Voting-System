@@ -127,4 +127,5 @@ The blockchain provides tamper-evident election state and vote totals after conf
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
