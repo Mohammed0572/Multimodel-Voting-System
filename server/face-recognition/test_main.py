@@ -100,7 +100,8 @@ def mock_live_capture(mock_details, mock_ear, yaw_sequence=LIVE_YAW_SEQUENCE):
     ]
     eye_ratios = [0.3] * len(yaw_sequence)
     for start in range(0, len(eye_ratios), CHALLENGE_FRAME_COUNT):
-        eye_ratios[start : start + 3] = [0.3, 0.2, 0.3]
+        blink_start = start + CHALLENGE_FRAME_COUNT // 2 - 1
+        eye_ratios[blink_start : blink_start + 3] = [0.3, 0.16, 0.3]
     mock_ear.side_effect = [ratio for ratio in eye_ratios for _ in range(2)]
 
 
@@ -246,7 +247,7 @@ def test_verify_face_success(mock_ear, mock_compare, mock_details):
 @patch("main.get_face_details")
 @patch("main.compare_faces")
 @patch("main.calculate_ear")
-def test_static_face_capture_is_rejected(mock_ear, mock_compare, mock_details):
+def test_blink_login_succeeds_without_head_movement(mock_ear, mock_compare, mock_details):
     mock_live_capture(
         mock_details,
         mock_ear,
@@ -271,9 +272,8 @@ def test_static_face_capture_is_rejected(mock_ear, mock_compare, mock_details):
             },
         )
 
-    assert response.status_code == 401
-    assert "head movement" in response.json()["detail"]
-    assert "auth_token" not in response.cookies
+    assert response.status_code == 200
+    assert response.cookies.get("auth_token")
 
 
 def test_enroll_requires_admin():
@@ -429,7 +429,7 @@ def test_liveness_challenge_endpoint():
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["challenge"] == "turn_side_to_side_and_blink"
+        assert data["challenge"] == "blink_once"
         assert "challenge_id" in data
         assert "instruction" in data
         assert data["expires_in"] == 30
