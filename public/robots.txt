@@ -1,0 +1,17 @@
+# robots.txt for Prajatantra e-Voting Platform
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /accessibility
+
+# Disallow private voter sessions, admin panels, and backend API routes
+Disallow: /voting
+Disallow: /admin
+Disallow: /admin-login
+Disallow: /api/
+
+Sitemap: https://prajatantra-voting.vercel.app/sitemap.xml
