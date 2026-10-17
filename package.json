@@ -23,7 +23,7 @@
     "@truffle/contract": "^4.6.31",
     "dotenv": "^16.6.1",
     "envalid": "^8.2.0",
-    "express": "^4.22.2",
+    "express": "^5.3.0",
     "express-rate-limit": "^8.6.2",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
