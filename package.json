@@ -24,7 +24,7 @@
     "dotenv": "^16.6.1",
     "envalid": "^8.2.0",
     "express": "^4.22.2",
-    "express-rate-limit": "^8.6.2",
+    "express-rate-limit": "^8.7.1",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
