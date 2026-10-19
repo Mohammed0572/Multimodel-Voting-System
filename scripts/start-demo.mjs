@@ -510,10 +510,7 @@ async function main() {
   );
   if (!configuredAdminPassword) {
     console.log(
-      `  - Local demo admin: ${colors.cyan}${adminUsername}${colors.reset} / ${colors.cyan}${adminPassword}${colors.reset}`,
-    );
-    console.log(
-      `    This password is temporary and will change the next time you run the demo.`,
+      `  - Local demo admin credentials were initialized for this run (not displayed for security).`,
     );
   }
   console.log(
