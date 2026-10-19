@@ -2,6 +2,8 @@
 
 An academic voting prototype with a React web app, a FastAPI face-authentication service, a SQLite voter registry, and a Solidity contract for election state and vote tallies.
 
+![Admin Dashboard](./public/Dashboard.gif)
+
 > **Scope:** This is a local/testnet prototype, not a production election system. Face matching, a one-use liveness challenge, head movement, and blink checks are limited authentication signals; they are not certified anti-spoofing and cannot guarantee rejection of a well-made replay. The voter registry, eligibility review, credential issuance, and blockchain relayer are trusted centralized services. The public contract records candidate totals and one-time credential hashes; it does not provide cryptographic ballot secrecy or coercion resistance.
 
 ## Project layout
