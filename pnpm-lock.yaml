@@ -47,8 +47,8 @@ importers:
         specifier: ^4.22.2
         version: 4.22.2(supports-color@8.1.1)
       express-rate-limit:
-        specifier: ^8.6.2
-        version: 8.7.0(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
+        specifier: ^8.7.1
+        version: 8.7.1(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1)
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
@@ -2451,8 +2451,8 @@ packages:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
 
-  express-rate-limit@8.7.0:
-    resolution: {integrity: sha512-hOwV7WOxXfjRpAM1DSJWZDXx3GhplwD8IfwuwvogD8i1Qnkgosw/H45s4ZnFAUHDAhPjlY9hLBvJhKmGMyY26g==}
+  express-rate-limit@8.7.1:
+    resolution: {integrity: sha512-2FXbqkygil3mZiXzEtM0IjE/UBmBNot0J1GEVrJT4JbrvwOSoEtqtO+wHbiMQELWe1eNvHoYRg2dkjOid+6JkA==}
     engines: {node: '>= 16'}
     peerDependencies:
       express: '>= 4.11'
@@ -8272,7 +8272,7 @@ snapshots:
 
   expect-type@1.4.0: {}
 
-  express-rate-limit@8.7.0(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1):
+  express-rate-limit@8.7.1(express@4.22.2(supports-color@8.1.1))(supports-color@8.1.1):
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
       express: 4.22.2(supports-color@8.1.1)
