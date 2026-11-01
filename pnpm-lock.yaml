@@ -32,8 +32,8 @@ importers:
   .:
     dependencies:
       '@mediapipe/tasks-vision':
-        specifier: ^0.10.22
-        version: 0.10.35
+        specifier: ^1.2.0
+        version: 1.2.0
       '@truffle/contract':
         specifier: ^4.6.31
         version: 4.6.31(bufferutil@4.0.7)(supports-color@8.1.1)(utf-8-validate@6.0.3)
@@ -41,8 +41,8 @@ importers:
         specifier: ^18.0.9
         version: 18.0.9
       envalid:
-        specifier: ^8.2.0
-        version: 8.2.0
+        specifier: ^9.0.0
+        version: 9.0.0
       express:
         specifier: ^4.22.2
         version: 4.22.2(supports-color@8.1.1)
@@ -649,8 +649,8 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@mediapipe/tasks-vision@0.10.35':
-    resolution: {integrity: sha512-HOvadwVRE6JC+45nyYhmnywnr5h/J8KZvOeUNVOG9q/0875pZgItznFB9bRTvLc264YSJqiZ1NsIpCStJw/egg==}
+  '@mediapipe/tasks-vision@1.2.0':
+    resolution: {integrity: sha512-7+dr9GbGyTtcuLh11wE5TOn4dNFRncIT9oAWs72620WX99KW5FfzF6rFJ/ChTgXG9vJ6dCiE9FrEEY4CnwPWKQ==}
 
   '@noble/curves@1.4.2':
     resolution: {integrity: sha512-TavHr8qycMChk8UwMld0ZDRvatedkzWfH8IiaeGCfymOP5i0hSCozz9vHOL0nkwk7HRMlFnAiKpS2jrUmSybcw==}
@@ -2264,9 +2264,9 @@ packages:
     resolution: {integrity: sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A==}
     engines: {node: '>=6'}
 
-  envalid@8.2.0:
-    resolution: {integrity: sha512-CkPvea95dwMYE1wnKX5mQXkOpiMs9O+ncv8NqZy+gW7FuzpUp06KTdUHb18xFG8CqQHmfmRqGLF5DuGaBWNrSw==}
-    engines: {node: '>=18'}
+  envalid@9.0.0:
+    resolution: {integrity: sha512-yGeeseY35RhYaDpBsNgL/fEaBqCsnCsRGCOmWHGLR+gaLE22Yk8fYbwkarIQxV2i4rj0F86EIFd32Yi0fqIZWQ==}
+    engines: {node: '>=22'}
 
   errno@0.1.8:
     resolution: {integrity: sha512-dJ6oBr5SQ1VSd9qkk7ByRgb/1SH4JZjCHSW/mr63/QcXO9zLVxvJ6Oy13nio03rxpSnVDDjFor75SjVeZWPW/A==}
@@ -6013,7 +6013,7 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@mediapipe/tasks-vision@0.10.35': {}
+  '@mediapipe/tasks-vision@1.2.0': {}
 
   '@noble/curves@1.4.2':
     dependencies:
@@ -7960,9 +7960,7 @@ snapshots:
   env-paths@2.2.1:
     optional: true
 
-  envalid@8.2.0:
-    dependencies:
-      tslib: 2.8.1
+  envalid@9.0.0: {}
 
   errno@0.1.8:
     dependencies:
@@ -10735,7 +10733,8 @@ snapshots:
   tslib@2.4.1:
     optional: true
 
-  tslib@2.8.1: {}
+  tslib@2.8.1:
+    optional: true
 
   tty-browserify@0.0.1: {}
 
