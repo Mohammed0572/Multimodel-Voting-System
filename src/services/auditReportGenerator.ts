@@ -68,12 +68,12 @@ export function generateAuditPdf(data: AuditReportData) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
   doc.setTextColor(...primaryColor);
-  doc.text("ELECTION COMMISSION OF INDIA", 105, 14, { align: "center" });
+  doc.text("ACADEMIC VOTING PROTOTYPE", 105, 14, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(100, 116, 139);
-  doc.text("OFFICIAL CRYPTOGRAPHIC AUDIT REPORT & VOTE RECORD", 105, 20, {
+  doc.text("BLOCKCHAIN AUDIT SNAPSHOT", 105, 20, {
     align: "center",
   });
 
@@ -97,7 +97,7 @@ export function generateAuditPdf(data: AuditReportData) {
 
   const statusLabel =
     data.state === "Ended"
-      ? "CERTIFIED CONCLUDED (FINAL)"
+      ? "ELECTION ENDED"
       : data.state === "Active"
         ? "IN PROGRESS (ACTIVE BALLOTING)"
         : "SCHEDULED / NOT STARTED";
@@ -178,7 +178,7 @@ export function generateAuditPdf(data: AuditReportData) {
     doc.setFontSize(9);
     doc.setTextColor(180, 83, 9); // amber 700
     doc.text(
-      `🏆 CERTIFIED WINNER: ${data.winner.name} (${data.winner.party}) with ${data.winner.votes} votes`,
+      `🏆 LEADING CANDIDATE: ${data.winner.name} (${data.winner.party}) with ${data.winner.votes} votes`,
       18,
       afterTurnoutY + 10.5,
     );

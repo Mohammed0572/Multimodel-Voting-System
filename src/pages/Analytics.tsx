@@ -69,9 +69,7 @@ export default function Analytics() {
       setLastUpdatedSecondsAgo(0);
     } catch (err: any) {
       console.error(err);
-      if (!isBackground) {
-        setError(err.message || "Failed to connect to election analytics service.");
-      }
+      setError(err.message || "Live results are unavailable. Previously loaded results may be stale.");
     } finally {
       if (!isBackground) setIsLoading(false);
     }
@@ -122,7 +120,7 @@ export default function Analytics() {
       return (
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200">
           <Award className="size-3.5 text-amber-600" />
-          ELECTION CONCLUDED · FINAL CERTIFIED
+          ELECTION CONCLUDED · FINAL RESULTS
         </span>
       );
     }

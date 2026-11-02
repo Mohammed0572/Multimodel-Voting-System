@@ -1,0 +1,19 @@
+{
+  "model": "sface-2021dec-v1",
+  "workers": 4,
+  "inference_20_frames_s": [
+    0.6659,
+    0.6399,
+    0.5875
+  ],
+  "scheduled_capture_s": 2.4,
+  "same_person_two_photos_cosine": 0.764164388179779,
+  "different_person_cosine": 0.0815608873963356,
+  "threshold": 0.5,
+  "input_sha256": {
+    "obama": "0930e3aa8cae5920329c0c8cbc6a2ab70f47b0e67b432875beaa95cbf7e741f6",
+    "obama2": "a7efcc907375274796f39646510704aa86672d59f6d5469d69af3c85590976a6",
+    "biden": "3c17508bb91554c637a2eabddfae790e5bb1caba93130814fc2ac50be9760c4c"
+  },
+  "scope": "Three public example photographs, not a biometric accuracy study. Native processing excludes camera, upload, decode/replay and DB time. Repeated still frames cannot pass live authentication."
+}

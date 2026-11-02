@@ -10,6 +10,9 @@ import {
   setVoiceAssistantEnabled,
 } from "../lib/voiceAssistant";
 
+import { useCamera } from "../lib/useCamera";
+import { captureLiveness, isLiveAction } from "../lib/livenessCapture";
+
 const VOTER_ID_PATTERN = /^[A-Z0-9/-]{1,64}$/;
 
 type Status = {
@@ -25,11 +28,13 @@ const VoterLogin = () => {
   const [lightingMessage, setLightingMessage] = useState("");
   const [status, setStatus] = useState<Status>({ message: "", type: "info" });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [guidedCapture, setGuidedCapture] = useState(false);
+  const [profileNotice, setProfileNotice] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(isVoiceAssistantEnabled);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { videoRef, mountedRef, abortRef, startCamera, stopCamera } = useCamera();
+  const processingRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,16 +67,10 @@ const VoterLogin = () => {
     }, 500);
 
     return () => window.clearInterval(intervalId);
-  }, [isCameraActive]);
-
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    };
-  }, []);
+  }, [isCameraActive, videoRef]);
 
   const updateStatus = (message: string, type: Status["type"] = "info") => {
+    if (!mountedRef.current) return;
     setStatus({ message, type });
     if (type === "error" || type === "success") announceVoiceMessage(message);
   };
@@ -86,42 +85,6 @@ const VoterLogin = () => {
         "Voice guidance is on. I will speak important login updates, errors, and voting confirmations.",
       );
     }
-  };
-
-  const captureLivenessSequence = async (
-    video: HTMLVideoElement,
-    canvas: HTMLCanvasElement,
-    onProgress: (message: string) => void,
-  ): Promise<string[]> => {
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error(
-        "The browser could not prepare the camera capture. Please try again.",
-      );
-    }
-    const maxFrameDimension = 720;
-    const scale = Math.min(
-      1,
-      maxFrameDimension / Math.max(video.videoWidth, video.videoHeight),
-    );
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
-    const frames: string[] = [];
-    // Sample long enough to catch a natural blink without making login drag.
-    const maxFrames = 14;
-    const frameDelayMs = 100;
-    for (let index = 0; index < maxFrames; index += 1) {
-      if (index === 3) onProgress("Blink once now; keep both eyes visible.");
-      if (index === 11) onProgress("Hold still; the capture is finishing…");
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      frames.push(canvas.toDataURL("image/jpeg", 0.72));
-      if (index < maxFrames - 1) {
-        await new Promise((resolve) =>
-          window.setTimeout(resolve, frameDelayMs),
-        );
-      }
-    }
-    return frames;
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
@@ -139,43 +102,20 @@ const VoterLogin = () => {
   };
 
   const startWebcam = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      updateStatus("This browser does not support camera access.", "error");
-      return;
-    }
-
     try {
-      updateStatus("Requesting camera access…");
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+      updateStatus("Camera initializing…");
+      if (await startCamera()) {
+        setIsCameraActive(true);
+        updateStatus("Camera ready. Tap Verify, keep still and follow the eye prompts.");
       }
-      setIsCameraActive(true);
-      updateStatus(
-        "Camera active. Tap Verify, keep your face centered, and blink once when the on-screen cue appears.",
-        "info",
-      );
     } catch (error) {
-      console.error("Webcam error:", error);
-      updateStatus(
-        "Camera access was denied or is unavailable. Check browser permissions and try again.",
-        "error",
-      );
+      updateStatus(error instanceof Error ? error.message : "Camera is unavailable.", "error");
     }
   };
 
   const verifyVoter = async (event?: React.FormEvent) => {
     event?.preventDefault();
+    if (processingRef.current) return;
     const normalizedVoterId = voterId.trim().toUpperCase();
 
     if (!VOTER_ID_PATTERN.test(normalizedVoterId)) {
@@ -211,16 +151,31 @@ const VoterLogin = () => {
       return;
     }
 
+    processingRef.current = true;
     setIsProcessing(true);
     updateStatus("Starting a fresh live check…");
 
+    const attempt = new AbortController();
+    const lifetimeSignal = abortRef.current.signal;
+    const cancelAttempt = () => attempt.abort();
+    lifetimeSignal.addEventListener("abort", cancelAttempt, { once: true });
+    if (lifetimeSignal.aborted) attempt.abort();
+    let timedOut = false;
+    const timeout = window.setTimeout(() => {
+      timedOut = true;
+      attempt.abort();
+    }, 30_000);
+
     try {
       const challengeResponse = await fetch(
-        `${API_BASE}/liveness/challenge?voter_id=${encodeURIComponent(normalizedVoterId)}`,
-        { credentials: "include" },
+        `${API_BASE}/liveness/challenge?voter_id=${encodeURIComponent(normalizedVoterId)}&guided=${guidedCapture || voiceEnabled}`,
+        { credentials: "include", signal: attempt.signal },
       );
       const challengeData = await challengeResponse.json().catch(() => ({}));
-      if (!challengeResponse.ok || !challengeData.challenge_id) {
+      if (challengeResponse.ok && challengeData.face_engine_version !== 3) {
+        throw new Error("The face service is still running the old version. Restart the demo, refresh this page, and try again.");
+      }
+      if (!challengeResponse.ok || !challengeData.challenge_id || !isLiveAction(challengeData.challenge)) {
         throw new Error(
           challengeData.detail || "Could not start the live check. Please try again.",
         );
@@ -230,14 +185,20 @@ const VoterLogin = () => {
         challengeData.instruction ||
           "Keep your face centered. I’ll tell you when to blink.",
       );
-      const frames = await captureLivenessSequence(video, canvas, (message) => {
+      setProfileNotice(challengeData.face_update_pending
+        ? "Your replacement is awaiting administrator approval. Your previous face profile is still active."
+        : challengeData.profile_model === "sface-2021dec-v1"
+          ? "Your updated face profile is active."
+          : "This is an older face profile. One new enrollment and administrator approval will enable quick login.");
+      const frames = await captureLiveness(video, canvas, challengeData.challenge, attempt.signal, (message) => {
         updateStatus(message);
-        if (message.startsWith("Blink once")) announceVoiceMessage(message);
-      });
+        announceVoiceMessage(message);
+      }, challengeData.capture_mode === "quick" ? "quick" : "guided");
 
-      updateStatus("Checking the blink and face match…");
+      updateStatus("Liveness check and identity verification…");
       const response = await fetch(`${API_BASE}/verify-face`, {
         method: "POST",
+        signal: attempt.signal,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
@@ -258,6 +219,7 @@ const VoterLogin = () => {
       }
 
       const data = await response.json();
+      if (!mountedRef.current) return;
       setAuth({
         voter_id: data.voter_id,
         role: data.role,
@@ -267,8 +229,7 @@ const VoterLogin = () => {
         validity: data.validity || undefined,
         dob: data.dob || undefined,
       });
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      stopCamera();
       setIsCameraActive(false);
       updateStatus(
         "Face recognized. You are logged in. Checking your voting eligibility now.",
@@ -278,7 +239,7 @@ const VoterLogin = () => {
     } catch (error) {
       console.error("Verification error:", error);
       updateStatus(
-        error instanceof Error
+        timedOut ? "Verification took too long. Please start a fresh live check." : error instanceof Error
           ? error.message === "Failed to fetch"
             ? `Authentication service unavailable at ${API_BASE}. Start the FastAPI backend and try again.`
             : error.message
@@ -286,7 +247,10 @@ const VoterLogin = () => {
         "error",
       );
     } finally {
-      setIsProcessing(false);
+      window.clearTimeout(timeout);
+      lifetimeSignal.removeEventListener("abort", cancelAttempt);
+      processingRef.current = false;
+      if (mountedRef.current) setIsProcessing(false);
     }
   };
 
@@ -384,10 +348,15 @@ const VoterLogin = () => {
               )}
             </div>
             <p className="mt-2 rounded-sm border border-india-blue/20 bg-india-blue-lt px-3 py-2 text-xs leading-relaxed text-india-blue">
-              <strong>When to blink:</strong> Tap Verify and keep your face
-              centered. The status message will cue one natural blink during
-              the short capture.
+              <strong>Live verification:</strong> Keep your head still. Close both
+              eyes, then open them when prompted.
             </p>
+            <label className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <input type="checkbox" checked={guidedCapture} disabled={isProcessing}
+                onChange={event => setGuidedCapture(event.target.checked)} />
+              Give me more time for the eye prompts
+            </label>
+            {profileNotice && <p className="mt-2 text-sm text-india-blue" role="note">{profileNotice}</p>}
             {isCameraActive && lightingMessage && (
               <p
                 className={`mt-2 text-xs ${lightingMessage.startsWith("Lighting is low") || lightingMessage.startsWith("The camera looks") ? "text-amber-700" : "text-india-green"}`}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useWeb3 } from "../context/Web3Context";
 import { useLanguage } from "../context/LanguageContext";
@@ -13,9 +13,9 @@ type Status = { message: string; type: string };
 
 type Student = {
   usn: string;
-  branch: "CB";
-  className: "CSBS";
-  batch: "2023" | "2024";
+  branch: string;
+  className: string;
+  batch: string;
   number: number;
   role: string;
   studentName: string;
@@ -33,11 +33,24 @@ type CandidateResult = {
   votes: string;
 };
 
-type PendingAction = "candidate" | "start" | "end" | null;
+type PendingAction = "candidate" | "start" | "end" | "new-election" | null;
 
 const Admin = () => {
   const { t } = useLanguage();
-  const { account, contract, isLoading, error, connectWallet } = useWeb3();
+  const {
+    account,
+    contract,
+    isLoading,
+    error,
+    electionId,
+    connectWallet,
+    deployElection,
+    refreshElection,
+  } = useWeb3();
+  const pendingRef = useRef(false);
+  const voterActionRef = useRef(false);
+  const stateRequestRef = useRef(0);
+  const resultsRequestRef = useRef(0);
   const [candidateName, setCandidateName] = useState("");
   const [candidateParty, setCandidateParty] = useState("");
   const [electionName, setElectionName] = useState("");
@@ -46,6 +59,7 @@ const Admin = () => {
   const [contractOwner, setContractOwner] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>({ message: "", type: "" });
   const [electionState, setElectionState] = useState<number | null>(null);
+  const [electionStateError, setElectionStateError] = useState<string | null>(null);
   const [studentSearch, setStudentSearch] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [turnoutError, setTurnoutError] = useState<string | null>(null);
@@ -59,19 +73,40 @@ const Admin = () => {
   const [isExportingAudit, setIsExportingAudit] = useState(false);
 
   const loadState = useCallback(async () => {
+    const requestId = ++stateRequestRef.current;
     try {
       const stateResult = await contract.getElectionState();
-      setElectionState(stateResult.toNumber());
+      const nextState =
+        typeof stateResult.toNumber === "function"
+          ? stateResult.toNumber()
+          : Number(stateResult);
+      if (!Number.isInteger(nextState) || nextState < 0 || nextState > 2) {
+        throw new Error("The contract returned an invalid election state.");
+      }
+      if (requestId !== stateRequestRef.current) return false;
+      setElectionState(nextState);
+      setElectionStateError(null);
+      return true;
     } catch (loadError) {
-      console.error(loadError);
+      if (requestId !== stateRequestRef.current) return false;
+      console.error("Unable to refresh the on-chain election state:", loadError);
+      setElectionStateError(
+        loadError instanceof Error
+          ? loadError.message
+          : "Unable to refresh the on-chain election state.",
+      );
+      return false;
     }
   }, [contract]);
 
   const loadResults = useCallback(async () => {
+    const requestId = ++resultsRequestRef.current;
     if (!contract) {
-      setResults([]);
-      setResultsError("The deployed voting contract is not connected.");
-      setIsLoadingResults(false);
+      if (requestId === resultsRequestRef.current) {
+        setResults([]);
+        setResultsError("The deployed voting contract is not connected.");
+        setIsLoadingResults(false);
+      }
       return;
     }
 
@@ -98,8 +133,9 @@ const Admin = () => {
           };
         }),
       );
-      setResults(candidateRows);
+      if (requestId === resultsRequestRef.current) setResults(candidateRows);
     } catch (resultsLoadError) {
+      if (requestId !== resultsRequestRef.current) return;
       console.error("Unable to load on-chain election results:", resultsLoadError);
       setResultsError(
         resultsLoadError instanceof Error
@@ -107,7 +143,7 @@ const Admin = () => {
           : "Unable to read election results from the blockchain.",
       );
     } finally {
-      setIsLoadingResults(false);
+      if (requestId === resultsRequestRef.current) setIsLoadingResults(false);
     }
   }, [contract]);
 
@@ -195,7 +231,7 @@ const Admin = () => {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [electionId]);
 
   useEffect(() => {
     if (!contract) return;
@@ -224,10 +260,12 @@ const Admin = () => {
   }, [electionState, loadStudents]);
 
   const handleEligibilityVerification = async (student: Student) => {
+    if (voterActionRef.current) return;
+    voterActionRef.current = true;
     setUpdatingStudentUsn(student.usn);
     try {
       const response = await fetch(
-        `${API_BASE}/admin/voters/${student.usn}/verify`,
+        `${API_BASE}/admin/voters/${encodeURIComponent(student.usn)}/verify`,
         {
           method: "PATCH",
           credentials: "include",
@@ -263,11 +301,14 @@ const Admin = () => {
         "error",
       );
     } finally {
+      voterActionRef.current = false;
       setUpdatingStudentUsn(null);
     }
   };
 
   const handleApproveFaceUpdate = async (student: Student) => {
+    if (voterActionRef.current || !window.confirm(`Activate the replacement face for ${student.usn} after checking their identity?`)) return;
+    voterActionRef.current = true;
     setUpdatingStudentUsn(student.usn);
     try {
       const response = await fetch(
@@ -290,19 +331,22 @@ const Admin = () => {
         "error",
       );
     } finally {
+      voterActionRef.current = false;
       setUpdatingStudentUsn(null);
     }
   };
 
   const handleDeleteVoter = async (student: Student) => {
+    if (voterActionRef.current) return;
     if (
       !window.confirm(
-        `Delete voter ${student.usn}? This removes their face registration and voting credentials.`,
+        `Delete voter ${student.usn}? This disables login and removes their face profile. Voting history is retained.`,
       )
     ) {
       return;
     }
 
+    voterActionRef.current = true;
     try {
       const response = await fetch(
         `${API_BASE}/admin/voters/${encodeURIComponent(student.usn)}`,
@@ -327,29 +371,47 @@ const Admin = () => {
           : "Unable to delete voter.",
         "error",
       );
+    } finally {
+      voterActionRef.current = false;
     }
   };
 
   const handleAddCandidate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (pendingAction) return;
+    if (pendingAction || pendingRef.current) return;
     if (!candidateName.trim() || !candidateParty.trim()) {
       updateStatus("Please fill all candidate fields.", "error");
       return;
     }
-    if (!contract || !account) {
+    if (electionState !== 0) {
       updateStatus(
-        "Connect the MetaMask account used to deploy the contract.",
+        "Candidates can only be added before an election starts. Deploy a new election contract to create another election.",
+        "error",
+      );
+      return;
+    }
+    if (!contract) {
+      updateStatus(
+        "The deployed voting contract is not connected.",
         "error",
       );
       return;
     }
 
+    pendingRef.current = true;
     setPendingAction("candidate");
     let previousCandidateCount: number | null = null;
     try {
+      const transactionAccount = account || (await connectWallet());
+      if (!transactionAccount) {
+        updateStatus(
+          "MetaMask connection was cancelled or no account was selected.",
+          "error",
+        );
+        return;
+      }
       const owner = await contract.owner();
-      if (owner.toLowerCase() !== account.toLowerCase()) {
+      if (owner.toLowerCase() !== transactionAccount.toLowerCase()) {
         updateStatus(
           `Only the contract owner can add candidates. Switch MetaMask to ${owner}.`,
           "error",
@@ -362,7 +424,7 @@ const Admin = () => {
       previousCandidateCount = Number(count.toString());
       updateStatus("Processing transaction on blockchain...", "info");
       await contract.addCandidate(candidateName, candidateParty, {
-        from: account,
+        from: transactionAccount,
       });
       await loadResults();
       updateStatus("Candidate added successfully!", "success");
@@ -375,7 +437,9 @@ const Admin = () => {
           const count = contract.countCandidates
             ? await contract.countCandidates()
             : await contract.getCountCandidates();
-          if (Number(count.toString()) > previousCandidateCount) {
+          if (Number(count.toString()) === previousCandidateCount + 1 &&
+              (await contract.getCandidate(previousCandidateCount + 1))[1] === candidateName &&
+              (await contract.getCandidate(previousCandidateCount + 1))[2] === candidateParty) {
             await loadResults();
             setCandidateName("");
             setCandidateParty("");
@@ -400,31 +464,41 @@ const Admin = () => {
         "error",
       );
     } finally {
+      pendingRef.current = false;
       setPendingAction(null);
     }
   };
 
   const handleStartElection = async () => {
-    if (pendingAction) return;
+    if (pendingAction || pendingRef.current) return;
     if (!electionName.trim() || electionName.trim() !== savedElectionName) {
       updateStatus("Save the election name before starting the election.", "error");
       return;
     }
-    if (!contract || !account) {
+    if (!contract) {
       updateStatus(
-        "Connect the contract owner wallet before starting the election.",
+        "The deployed voting contract is not connected.",
         "error",
       );
       return;
     }
 
+    pendingRef.current = true;
     setPendingAction("start");
     try {
+      const transactionAccount = account || (await connectWallet());
+      if (!transactionAccount) {
+        updateStatus(
+          "MetaMask connection was cancelled or no account was selected.",
+          "error",
+        );
+        return;
+      }
       const [owner, currentState] = await Promise.all([
         contract.owner(),
         contract.getElectionState(),
       ]);
-      if (owner.toLowerCase() !== account.toLowerCase()) {
+      if (owner.toLowerCase() !== transactionAccount.toLowerCase()) {
         updateStatus(
           "Only the contract owner can start the election.",
           "error",
@@ -436,9 +510,14 @@ const Admin = () => {
         return;
       }
       updateStatus("Processing transaction on blockchain...", "info");
-      await contract.startElection({ from: account });
-      updateStatus("Election started successfully!", "success");
-      await loadState();
+      await contract.startElection({ from: transactionAccount });
+      const stateLoaded = await loadState();
+      updateStatus(
+        stateLoaded
+          ? "Election started successfully!"
+          : "Election started on-chain, but the dashboard could not refresh its state.",
+        stateLoaded ? "success" : "error",
+      );
     } catch (startError) {
       console.error(startError);
       try {
@@ -460,26 +539,42 @@ const Admin = () => {
         startError instanceof Error ? startError.message : String(startError);
       updateStatus(`Failed to start election: ${errorMessage}`, "error");
     } finally {
+      pendingRef.current = false;
       setPendingAction(null);
     }
   };
 
   const handleEndElection = async () => {
-    if (pendingAction) return;
-    if (!contract || !account) {
+    if (pendingAction || pendingRef.current) return;
+    if (!contract) {
       updateStatus(
-        "Connect the contract owner wallet before ending the election.",
+        "The deployed voting contract is not connected.",
         "error",
       );
       return;
     }
 
+    if (!window.confirm("End this election permanently? No further ballots can be accepted.")) return;
+    pendingRef.current = true;
     setPendingAction("end");
     try {
+      const transactionAccount = account || (await connectWallet());
+      if (!transactionAccount) {
+        updateStatus(
+          "MetaMask connection was cancelled or no account was selected.",
+          "error",
+        );
+        return;
+      }
       updateStatus("Processing transaction on blockchain...", "info");
-      await contract.endElection({ from: account });
-      updateStatus("Election ended successfully!", "success");
-      await Promise.all([loadState(), loadResults()]);
+      await contract.endElection({ from: transactionAccount });
+      const [stateLoaded] = await Promise.all([loadState(), loadResults()]);
+      updateStatus(
+        stateLoaded
+          ? "Election ended successfully!"
+          : "Election ended on-chain, but the dashboard could not refresh its state.",
+        stateLoaded ? "success" : "error",
+      );
     } catch (endError) {
       console.error(endError);
       try {
@@ -504,6 +599,91 @@ const Admin = () => {
         "error",
       );
     } finally {
+      pendingRef.current = false;
+      setPendingAction(null);
+    }
+  };
+
+  const handleCreateNewElection = async () => {
+    if (pendingRef.current || electionState !== 2) return;
+    const name = electionName.trim();
+    if (!name) {
+      updateStatus("Enter a name for the new election.", "error");
+      return;
+    }
+    if (!contract) {
+      updateStatus("The current voting contract is not connected.", "error");
+      return;
+    }
+
+    pendingRef.current = true;
+    setPendingAction("new-election");
+    try {
+      const transactionAccount = account || (await connectWallet());
+      if (!transactionAccount) {
+        updateStatus(
+          "MetaMask connection was cancelled or no account was selected.",
+          "error",
+        );
+        return;
+      }
+
+      const currentOwner = await contract.owner();
+      if (currentOwner.toLowerCase() !== transactionAccount.toLowerCase()) {
+        updateStatus(
+          `Only the current contract owner can create an election. Switch MetaMask to ${currentOwner}.`,
+          "error",
+        );
+        return;
+      }
+
+      const relayerAddress = await contract.relayer();
+      updateStatus("Deploying the new election contract with MetaMask...", "info");
+      const newContractAddress = await deployElection(
+        relayerAddress,
+        transactionAccount,
+      );
+      const response = await fetch(`${API_BASE}/admin/election/activate`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contract_address: newContractAddress,
+          owner_address: transactionAccount,
+          name,
+        }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          data.detail ||
+            `The new contract was deployed at ${newContractAddress}, but could not be activated.`,
+        );
+      }
+
+      const election = await response.json();
+      setElectionName(election.name);
+      setSavedElectionName(election.name);
+      setCandidateName("");
+      setCandidateParty("");
+      setBackendElectionId(election.election_id.toLowerCase());
+      setResults([]);
+      setElectionState(null);
+      setResultsError(null);
+      setIsLoadingResults(true);
+      await refreshElection();
+      await loadStudents();
+      updateStatus("New election created and active.", "success");
+    } catch (createError) {
+      console.error("Unable to create the new election:", createError);
+      updateStatus(
+        createError instanceof Error
+          ? createError.message
+          : "Unable to create the new election.",
+        "error",
+      );
+    } finally {
+      pendingRef.current = false;
       setPendingAction(null);
     }
   };
@@ -1175,7 +1355,7 @@ const Admin = () => {
             <button
               type="submit"
               className="gov-button mt-2"
-              disabled={pendingAction !== null}
+              disabled={electionState !== 0 || pendingAction !== null}
             >
               {pendingAction === "candidate" ? "Adding candidate…" : t("admin.add_btn")}
             </button>
@@ -1192,9 +1372,14 @@ const Admin = () => {
             Current state:{" "}
             <span className="text-[#046a38]">{electionLabel}</span>
           </p>
+          {electionStateError && (
+            <p className="gov-alert-error mb-4 rounded-sm" role="alert">
+              Election state could not be refreshed: {electionStateError}
+            </p>
+          )}
           <div className="mb-5 max-w-xl">
             <label className="gov-input-label" htmlFor="electionName">
-              Election name
+              {electionState === 2 ? "New election name" : "Election name"}
             </label>
             <div className="flex flex-wrap gap-3">
               <input
@@ -1203,21 +1388,46 @@ const Admin = () => {
                 maxLength={120}
                 value={electionName}
                 onChange={(event) => setElectionName(event.target.value)}
-                placeholder="e.g. CSBS Student Council Election 2026"
+                placeholder={
+                  electionState === 2
+                    ? "e.g. CSBS Student Council Election 2027"
+                    : "e.g. CSBS Student Council Election 2026"
+                }
                 className="gov-input min-w-64 flex-1"
-                disabled={electionState !== 0 || isSavingElectionName}
+                disabled={
+                  (electionState !== 0 && electionState !== 2) ||
+                  isSavingElectionName ||
+                  pendingAction !== null
+                }
               />
               <button
                 type="button"
                 className="gov-button"
-                onClick={handleSaveElectionName}
-                disabled={electionState !== 0 || isSavingElectionName}
+                onClick={() =>
+                  electionState === 2
+                    ? void handleCreateNewElection()
+                    : void handleSaveElectionName()
+                }
+                disabled={
+                  (electionState !== 0 && electionState !== 2) ||
+                  isSavingElectionName ||
+                  pendingAction !== null ||
+                  (electionState === 2 && !electionName.trim())
+                }
               >
-                {isSavingElectionName ? "Saving…" : "Save election name"}
+                {pendingAction === "new-election"
+                  ? "Creating election…"
+                  : isSavingElectionName
+                    ? "Saving…"
+                    : electionState === 2
+                      ? "Create new election"
+                      : "Save election name"}
               </button>
             </div>
             <p className="mt-1 text-sm text-[#565c65]">
-              Set the name before starting. Voters will see it on the voting page.
+              {electionState === 2
+                ? "Deploy a fresh contract and activate this election for all voters."
+                : "Set the name before starting. Voters will see it on the voting page."}
             </p>
           </div>
           <div className="flex flex-wrap gap-4">

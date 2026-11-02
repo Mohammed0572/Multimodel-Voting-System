@@ -1,0 +1,1639 @@
+{
+  "advisories": {
+    "1096727": {
+      "findings": [
+        {
+          "version": "2.88.2",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>request"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1096727,
+      "title": "Server-Side Request Forgery in Request",
+      "module_name": "request",
+      "vulnerable_versions": "<=2.88.2",
+      "patched_versions": ">=2.88.3",
+      "severity": "moderate",
+      "cwe": "CWE-918",
+      "github_advisory_id": "GHSA-p8p7-x288-28g6",
+      "url": "https://github.com/advisories/GHSA-p8p7-x288-28g6"
+    },
+    "1108316": {
+      "findings": [
+        {
+          "version": "1.10.4",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-shh>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-shh>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-shh>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-shh>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-accounts>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-ens>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-shh>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-shh>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-shh>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-shh>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-accounts>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-ens>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-shh>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-shh>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-shh>web3-core-subscriptions",
+            ".>web3>web3-shh>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>web3>web3-shh>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-net>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-net>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth-personal>web3-core>web3-core-method>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth-personal>web3-core-method>web3-core-subscriptions"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "1.10.0",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-shh>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>@truffle/contract>web3>web3-shh>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-shh>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-shh>web3-core-subscriptions",
+            ".>truffle>@truffle/debugger>web3>web3-eth>web3-core-subscriptions",
+            ".>truffle>@truffle/debugger>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/debugger>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/debugger>web3>web3-shh>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-shh>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-shh>web3-core-subscriptions"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1108316,
+      "title": "web3-core-subscriptions has a Prototype Pollution vulnerability",
+      "module_name": "web3-core-subscriptions",
+      "vulnerable_versions": "<=2.0.0-alpha.1",
+      "patched_versions": ">=2.0.0",
+      "severity": "low",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-hhf6-3xpg-pggx",
+      "url": "https://github.com/advisories/GHSA-hhf6-3xpg-pggx"
+    },
+    "1112030": {
+      "findings": [
+        {
+          "version": "6.6.1",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/abi>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/contracts>@ethersproject/abi>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/contracts>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/contracts>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/contracts>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/hdnode>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/hdnode>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/hdnode>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/hdnode>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/json-wallets>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/providers>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/providers>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/providers>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/providers>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/hdnode>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/hdnode>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/hdnode>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/hdnode>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/hdnode>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/json-wallets>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wallet>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@ensdomains/ensjs>ethers>@ethersproject/wordlists>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/debug-utils>@truffle/codec>@truffle/abi-utils>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/debug-utils>@truffle/codec>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>ethers>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-method>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-method>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-method>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-abi>@ethersproject/abi>@ethersproject/hash>@ethersproject/abstract-signer>@ethersproject/abstract-provider>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-abi>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/common>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/tx>@ethereumjs/common>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/tx>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-method>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-method>@ethersproject/transactions>@ethersproject/signing-key>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>secp256k1>elliptic"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1112030,
+      "title": "Elliptic Uses a Cryptographic Primitive with a Risky Implementation",
+      "module_name": "elliptic",
+      "vulnerable_versions": "<=6.6.1",
+      "patched_versions": ">=6.6.2",
+      "severity": "low",
+      "cwe": "CWE-1240",
+      "github_advisory_id": "GHSA-848j-6mx2-7j84",
+      "url": "https://github.com/advisories/GHSA-848j-6mx2-7j84"
+    },
+    "1112928": {
+      "findings": [
+        {
+          "version": "3.13.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server",
+            ".>truffle>@truffle/db>apollo-server"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1112928,
+      "title": "Apollo Serve vulnerable to Denial of Service with `startStandaloneServer`",
+      "module_name": "apollo-server",
+      "vulnerable_versions": ">=2.0.0 <=3.13.0",
+      "patched_versions": ">=3.13.1",
+      "severity": "high",
+      "cwe": "CWE-1333",
+      "github_advisory_id": "GHSA-mp6q-xf9x-fwf7",
+      "url": "https://github.com/advisories/GHSA-mp6q-xf9x-fwf7"
+    },
+    "1115451": {
+      "findings": [
+        {
+          "version": "3.13.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1115451,
+      "title": "Apollo Server: Browser bug allows for bypass of XS-Search (read-only Cross-Site Request Forgery) prevention",
+      "module_name": "apollo-server-core",
+      "vulnerable_versions": "<=3.13.0",
+      "patched_versions": ">=3.13.1",
+      "severity": "moderate",
+      "cwe": "CWE-200",
+      "github_advisory_id": "GHSA-9q82-xgwf-vj6h",
+      "url": "https://github.com/advisories/GHSA-9q82-xgwf-vj6h"
+    },
+    "1117412": {
+      "findings": [
+        {
+          "version": "6.26.0",
+          "paths": [
+            ".>esmify>babel-plugin-import-to-require>babel-template>babel-traverse"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1117412,
+      "title": "Babel vulnerable to arbitrary code execution when compiling specifically crafted malicious code",
+      "module_name": "babel-traverse",
+      "vulnerable_versions": "<7.23.2",
+      "patched_versions": ">=7.23.2",
+      "severity": "critical",
+      "cwe": "CWE-184, CWE-697",
+      "github_advisory_id": "GHSA-67hx-6x53-jw92",
+      "url": "https://github.com/advisories/GHSA-67hx-6x53-jw92"
+    },
+    "1147955": {
+      "findings": [
+        {
+          "version": "0.2.2",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1147955,
+      "title": "decode-uri-component: Denial of service via exponential decoding of malformed percent-encoded input",
+      "module_name": "decode-uri-component",
+      "vulnerable_versions": "<=0.4.2",
+      "patched_versions": ">=0.4.3",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-405, CWE-407, CWE-1176",
+      "github_advisory_id": "GHSA-vcc3-ghjq-m6fr",
+      "url": "https://github.com/advisories/GHSA-vcc3-ghjq-m6fr"
+    },
+    "1240090": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1240090,
+      "title": "fast-uri vulnerable to inconsistent host case normalization via percent-encoded octets",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.0.0 <4.1.5",
+      "patched_versions": ">=4.1.5",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-hrr3-gc8f-f4qj",
+      "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj"
+    },
+    "1240093": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1240093,
+      "title": "fast-uri vulnerable to mailto header injection via percent-encoded field-name desynchronization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.1.3 <4.1.5",
+      "patched_versions": ">=4.1.5",
+      "severity": "moderate",
+      "cwe": "CWE-172, CWE-436",
+      "github_advisory_id": "GHSA-jvvf-x445-j334",
+      "url": "https://github.com/advisories/GHSA-jvvf-x445-j334"
+    },
+    "1240097": {
+      "findings": [
+        {
+          "version": "10.7.0",
+          "paths": [
+            ".>express-rate-limit>ip-address"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240097,
+      "title": "ip-address: isInSubnet() and isHostInSubnet() compare addresses of different families as if they shared an address space, allowing an allowlist check to admit an address outside its range",
+      "module_name": "ip-address",
+      "vulnerable_versions": "<=10.7.0",
+      "patched_versions": ">=10.7.1",
+      "severity": "moderate",
+      "cwe": "CWE-697, CWE-843",
+      "github_advisory_id": "GHSA-j6r3-76f7-8jcv",
+      "url": "https://github.com/advisories/GHSA-j6r3-76f7-8jcv"
+    },
+    "1240098": {
+      "findings": [
+        {
+          "version": "10.7.0",
+          "paths": [
+            ".>express-rate-limit>ip-address"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240098,
+      "title": "ip-address: Address6 builds a parse diagnostic proportional to the input with no length bound, allowing a single long string to stall or crash the process",
+      "module_name": "ip-address",
+      "vulnerable_versions": "<=10.7.0",
+      "patched_versions": ">=10.7.1",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-770",
+      "github_advisory_id": "GHSA-h3mg-xc3c-68pw",
+      "url": "https://github.com/advisories/GHSA-h3mg-xc3c-68pw"
+    },
+    "1240103": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>minimatch>brace-expansion",
+            ".>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>minimatch>brace-expansion",
+            ".>truffle>@truffle/debugger>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>minimatch>brace-expansion"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240103,
+      "title": "brace-expansion: Quadratic-time expansion of the `{a},b}` rewrite causes CPU denial of service",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.12",
+      "patched_versions": ">=5.0.12",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-q2hr-2g5m-vwhr",
+      "url": "https://github.com/advisories/GHSA-q2hr-2g5m-vwhr"
+    },
+    "1240107": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>minimatch>brace-expansion",
+            ".>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>minimatch>brace-expansion",
+            ".>truffle>@truffle/debugger>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>minimatch>brace-expansion"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240107,
+      "title": "brace-expansion: DoS via uncontrolled recursion on nested brace groups causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.11",
+      "patched_versions": ">=5.0.11",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-qhr7-859c-m2p7",
+      "url": "https://github.com/advisories/GHSA-qhr7-859c-m2p7"
+    },
+    "1240111": {
+      "findings": [
+        {
+          "version": "5.0.9",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>@eslint/js>eslint>minimatch>brace-expansion",
+            ".>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-hooks>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-react-refresh>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>eslint-plugin-regexp>eslint>minimatch>brace-expansion",
+            ".>truffle>@truffle/debugger>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>glob>minimatch>brace-expansion",
+            ".>truffle>mocha>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>@eslint/config-array>minimatch>brace-expansion",
+            ".>typescript-eslint>eslint>minimatch>brace-expansion"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240111,
+      "title": "brace-expansion: DoS via uncontrolled recursion in parseCommaParts causing stack exhaustion",
+      "module_name": "brace-expansion",
+      "vulnerable_versions": ">=4.0.0 <5.0.10",
+      "patched_versions": ">=5.0.10",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-674",
+      "github_advisory_id": "GHSA-6j4f-fj2g-mc7p",
+      "url": "https://github.com/advisories/GHSA-6j4f-fj2g-mc7p"
+    },
+    "1240620": {
+      "findings": [
+        {
+          "version": "7.1.1",
+          "paths": [
+            ".>truffle>mocha>serialize-javascript"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240620,
+      "title": "Serialize JavaScript: Cross-site scripting (XSS) via unescaped </script> in serialized function bodies",
+      "module_name": "serialize-javascript",
+      "vulnerable_versions": ">=7.1.1 <7.1.2",
+      "patched_versions": ">=7.1.2",
+      "severity": "low",
+      "cwe": "CWE-79, CWE-80",
+      "github_advisory_id": "GHSA-gfhx-hw2g-v5hg",
+      "url": "https://github.com/advisories/GHSA-gfhx-hw2g-v5hg"
+    },
+    "1241209": {
+      "findings": [
+        {
+          "version": "1.2.1",
+          "paths": [
+            ".>@tailwindcss/vite>@tailwindcss/node>source-map-js"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241209,
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "module_name": "source-map-js",
+      "vulnerable_versions": ">=1.0.0 <1.2.2",
+      "patched_versions": ">=1.2.2",
+      "severity": "high",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+    },
+    "1241230": {
+      "findings": [
+        {
+          "version": "8.9.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/delegate>@graphql-tools/batch-execute>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/delegate>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/delegate>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/delegate>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/delegate>@graphql-tools/batch-execute>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/delegate>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/delegate>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/delegate>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/schema>@graphql-tools/utils"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        },
+        {
+          "version": "9.2.1",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-core>@graphql-tools/mock>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/merge>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/schema>@graphql-tools/utils",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>apollo-server-core>@graphql-tools/mock>@graphql-tools/utils"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1241230,
+      "title": "GraphQL Tools has prototype pollution in well-established utility function `mergeDeep`",
+      "module_name": "@graphql-tools/utils",
+      "vulnerable_versions": "<=12.0.0",
+      "patched_versions": ">=12.0.1",
+      "severity": "high",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-7mx3-vvmw-hjmv",
+      "url": "https://github.com/advisories/GHSA-7mx3-vvmw-hjmv"
+    },
+    "1241333": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/debug-utils>@truffle/codec>@truffle/abi-utils>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/debug-utils>@truffle/codec>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-core-subscriptions>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-abi>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/common>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/tx>@ethereumjs/common>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>@ethereumjs/tx>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-subscriptions>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-core-subscriptions>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-eth-abi>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-contract>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-abi>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-http>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ipc>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-core-requestmanager>web3-providers-ws>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-core-subscriptions>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-eth-abi>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-eth-contract>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-ens>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core>web3-core-helpers>web3-eth-iban>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-personal>web3-core>web3-core-helpers>web3-utils>ethereumjs-util>ethereum-cryptography>pbkdf2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241333,
+      "title": "pbkdf2 rehashes long passwords on every iteration, enabling denial of service",
+      "module_name": "pbkdf2",
+      "vulnerable_versions": "<=3.1.6",
+      "patched_versions": ">=3.1.7",
+      "severity": "moderate",
+      "cwe": "CWE-400",
+      "github_advisory_id": "GHSA-477h-4r7f-fvrx",
+      "url": "https://github.com/advisories/GHSA-477h-4r7f-fvrx"
+    },
+    "1242604": {
+      "findings": [
+        {
+          "version": "1.16.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1242604,
+      "title": "follow-redirects array-form headers bypass cross-origin credential stripping",
+      "module_name": "follow-redirects",
+      "vulnerable_versions": ">=1.16.0 <1.16.1",
+      "patched_versions": ">=1.16.1",
+      "severity": "high",
+      "cwe": "CWE-200, CWE-212",
+      "github_advisory_id": "GHSA-q3jh-wrc6-jgq8",
+      "url": "https://github.com/advisories/GHSA-q3jh-wrc6-jgq8"
+    },
+    "1242605": {
+      "findings": [
+        {
+          "version": "1.16.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1242605,
+      "title": "follow-redirects sensitiveHeaders regex escaping can expose credential headers",
+      "module_name": "follow-redirects",
+      "vulnerable_versions": ">=1.16.0 <1.16.1",
+      "patched_versions": ">=1.16.1",
+      "severity": "high",
+      "cwe": "CWE-185, CWE-200",
+      "github_advisory_id": "GHSA-8r9p-f939-6h3c",
+      "url": "https://github.com/advisories/GHSA-8r9p-f939-6h3c"
+    },
+    "1242767": {
+      "findings": [
+        {
+          "version": "4.1.11",
+          "paths": [
+            ".>@testing-library/jest-dom>vitest>@vitest/mocker",
+            ".>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242767,
+      "title": "Vitest: Code injection via unauthenticated manual mock registration",
+      "module_name": "@vitest/mocker",
+      "vulnerable_versions": ">=2.1.0-beta.7 <4.1.12",
+      "patched_versions": ">=4.1.12",
+      "severity": "moderate",
+      "cwe": "CWE-94, CWE-116, CWE-306",
+      "github_advisory_id": "GHSA-qxg6-89mg-rqv8",
+      "url": "https://github.com/advisories/GHSA-qxg6-89mg-rqv8"
+    },
+    "1242769": {
+      "findings": [
+        {
+          "version": "4.1.11",
+          "paths": [
+            ".>@testing-library/jest-dom>vitest>@vitest/mocker",
+            ".>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242769,
+      "title": "Vitest: Windows backslash traversal bypasses the @vitest/mocker redirect allowlist fix",
+      "module_name": "@vitest/mocker",
+      "vulnerable_versions": ">=4.1.11 <4.1.12",
+      "patched_versions": ">=4.1.12",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-xp26-3454-mjgp",
+      "url": "https://github.com/advisories/GHSA-xp26-3454-mjgp"
+    },
+    "1242883": {
+      "findings": [
+        {
+          "version": "10.7.0",
+          "paths": [
+            ".>express-rate-limit>ip-address"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242883,
+      "title": "ip-address: Address6 matches a zone identifier in quadratic time ahead of its length limit, allowing a single long string to stall the process",
+      "module_name": "ip-address",
+      "vulnerable_versions": "<=10.7.3",
+      "patched_versions": ">=10.7.4",
+      "severity": "moderate",
+      "cwe": "CWE-1333",
+      "github_advisory_id": "GHSA-rxp7-6hxx-x8q5",
+      "url": "https://github.com/advisories/GHSA-rxp7-6hxx-x8q5"
+    },
+    "1243066": {
+      "findings": [
+        {
+          "version": "4.5.4",
+          "paths": [
+            ".>eslint-plugin-react-hooks>zod",
+            ".>eslint-plugin-react-hooks>zod-validation-error>zod"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243066,
+      "title": "Zod can exhaust memory while validating oversized constrained collections",
+      "module_name": "zod",
+      "vulnerable_versions": "<4.6.6",
+      "patched_versions": ">=4.6.6",
+      "severity": "high",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-mrhx-c7xc-m3w5",
+      "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5"
+    },
+    "1243074": {
+      "findings": [
+        {
+          "version": "2.3.0",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>express>body-parser",
+            ".>express-rate-limit>express>body-parser",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>express>body-parser",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>express>body-parser",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>body-parser",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>express>body-parser",
+            ".>truffle>@truffle/db>apollo-server>express>body-parser"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243074,
+      "title": "body-parser vulnerable to Denial of Service via trailing bytes after a compressed request body",
+      "module_name": "body-parser",
+      "vulnerable_versions": ">=2.0.0 <2.4.0",
+      "patched_versions": ">=2.4.0",
+      "severity": "high",
+      "cwe": "CWE-248",
+      "github_advisory_id": "GHSA-27r3-jxmh-p828",
+      "url": "https://github.com/advisories/GHSA-27r3-jxmh-p828"
+    },
+    "1243078": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243078,
+      "title": "undici vulnerable to Denial of Service via unbounded memory in the EventSource parser",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.0.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "moderate",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-4qv8-2p9j-2685",
+      "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685"
+    },
+    "1243081": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243081,
+      "title": "undici vulnerable to Subresource Integrity bypass via non-lowercase algorithm tokens",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.15.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-f72v-6w45-q472",
+      "url": "https://github.com/advisories/GHSA-f72v-6w45-q472"
+    },
+    "1243082": {
+      "findings": [
+        {
+          "version": "7.1.1",
+          "paths": [
+            ".>truffle>mocha>serialize-javascript"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243082,
+      "title": "Serialize JavaScript: Cross-site scripting (XSS) via unescaped </script at the end of a serialized function body",
+      "module_name": "serialize-javascript",
+      "vulnerable_versions": "<7.1.3",
+      "patched_versions": ">=7.1.3",
+      "severity": "low",
+      "cwe": "CWE-79",
+      "github_advisory_id": "GHSA-m5mm-p8h7-m29v",
+      "url": "https://github.com/advisories/GHSA-m5mm-p8h7-m29v"
+    },
+    "1243097": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1243097,
+      "title": "fast-uri vulnerable to URI scheme spoofing via percent-encoded scheme decoding",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.0.0 <4.2.3",
+      "patched_versions": ">=4.2.3",
+      "severity": "moderate",
+      "cwe": "CWE-172, CWE-180",
+      "github_advisory_id": "GHSA-w74x-v6f9-j3xg",
+      "url": "https://github.com/advisories/GHSA-w74x-v6f9-j3xg"
+    },
+    "1243100": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1243100,
+      "title": "fast-uri vulnerable to improper path equivalence in relative reference normalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.0.0 <4.2.3",
+      "patched_versions": ">=4.2.3",
+      "severity": "low",
+      "cwe": "CWE-41",
+      "github_advisory_id": "GHSA-xhq7-xmqj-769h",
+      "url": "https://github.com/advisories/GHSA-xhq7-xmqj-769h"
+    },
+    "1243103": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1243103,
+      "title": "fast-uri vulnerable to host confusion via unchecked WHATWG host canonicalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.0.1 <4.2.3",
+      "patched_versions": ">=4.2.3",
+      "severity": "moderate",
+      "cwe": "CWE-20, CWE-436",
+      "github_advisory_id": "GHSA-wjr9-j795-jxcr",
+      "url": "https://github.com/advisories/GHSA-wjr9-j795-jxcr"
+    },
+    "1243106": {
+      "findings": [
+        {
+          "version": "4.1.4",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv>fast-uri",
+            ".>truffle>@truffle/db>@truffle/config>conf>ajv-formats>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1243106,
+      "title": "fast-uri vulnerable to scheme injection via an unescaped first-segment colon in suffix references",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=4.0.0 <4.2.3",
+      "patched_versions": ">=4.2.3",
+      "severity": "low",
+      "cwe": "CWE-41, CWE-116",
+      "github_advisory_id": "GHSA-333x-w4r6-6crp",
+      "url": "https://github.com/advisories/GHSA-333x-w4r6-6crp"
+    },
+    "1243113": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243113,
+      "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.18.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "high",
+      "cwe": "CWE-248, CWE-459",
+      "github_advisory_id": "GHSA-xjj6-f33q-929c",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c"
+    },
+    "1243473": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243473,
+      "title": "undici vulnerable to cache poisoning and cross-user disclosure via cross-origin redirects",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.0.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "high",
+      "cwe": "CWE-346, CWE-524",
+      "github_advisory_id": "GHSA-4w7w-5xrc-9h26",
+      "url": "https://github.com/advisories/GHSA-4w7w-5xrc-9h26"
+    },
+    "1243475": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243475,
+      "title": "undici vulnerable to TLS certificate validation bypass via dropped tls options in Agent",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.0.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "high",
+      "cwe": "CWE-295",
+      "github_advisory_id": "GHSA-2m5v-pch6-74hx",
+      "url": "https://github.com/advisories/GHSA-2m5v-pch6-74hx"
+    },
+    "1243478": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243478,
+      "title": "undici vulnerable to Denial of Service via TLS 1.2 certificate-changing renegotiation",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.0.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "high",
+      "cwe": "CWE-248, CWE-617",
+      "github_advisory_id": "GHSA-qrxm-fqhp-jwvm",
+      "url": "https://github.com/advisories/GHSA-qrxm-fqhp-jwvm"
+    },
+    "1243481": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243481,
+      "title": "undici WebSocket client vulnerable to Denial of Service via unbounded automatic PONG buffering",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.0.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "moderate",
+      "cwe": "CWE-400, CWE-405, CWE-770",
+      "github_advisory_id": "GHSA-9fm3-97px-rjf6",
+      "url": "https://github.com/advisories/GHSA-9fm3-97px-rjf6"
+    },
+    "1243484": {
+      "findings": [
+        {
+          "version": "7.29.1",
+          "paths": [
+            ".>@truffle/contract>@truffle/debug-utils>@trufflesuite/chromafi>cheerio>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243484,
+      "title": "undici vulnerable to Denial of Service via unhandled exception in the decompress interceptor",
+      "module_name": "undici",
+      "vulnerable_versions": ">=7.15.0 <7.30.1",
+      "patched_versions": ">=7.30.1",
+      "severity": "moderate",
+      "cwe": "CWE-248",
+      "github_advisory_id": "GHSA-55wc-3pg8-jfw6",
+      "url": "https://github.com/advisories/GHSA-55wc-3pg8-jfw6"
+    },
+    "1243687": {
+      "findings": [
+        {
+          "version": "6.16.0",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>express>body-parser>qs",
+            ".>express>qs",
+            ".>express-rate-limit>express>body-parser>qs",
+            ".>express-rate-limit>express>qs",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>express>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>apollo-server-express>express>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>express>body-parser>qs",
+            ".>truffle>@truffle/db-loader>@truffle/db>apollo-server>express>qs",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>body-parser>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>body-parser>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>express>qs",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>servify>request>qs",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>body-parser>qs",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>express>body-parser>qs",
+            ".>truffle>@truffle/db>apollo-server>apollo-server-express>express>qs",
+            ".>truffle>@truffle/db>apollo-server>express>body-parser>qs",
+            ".>truffle>@truffle/db>apollo-server>express>qs",
+            ".>vite-plugin-node-polyfills>node-stdlib-browser>url>qs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243687,
+      "title": "qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS)",
+      "module_name": "qs",
+      "vulnerable_versions": ">=6.7.0 <=6.16.0",
+      "patched_versions": ">=6.16.1",
+      "severity": "moderate",
+      "cwe": "CWE-248, CWE-704",
+      "github_advisory_id": "GHSA-6pq8-jhm2-2vcw",
+      "url": "https://github.com/advisories/GHSA-6pq8-jhm2-2vcw"
+    },
+    "1243857": {
+      "findings": [
+        {
+          "version": "0.2.2",
+          "paths": [
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>@truffle/contract>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/debugger>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>@truffle/interface-adapter>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-bzz>swarm-js>xhr-request>query-string>decode-uri-component",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/provider>web3>web3-eth>web3-eth-accounts>eth-lib>xhr-request-promise>xhr-request>query-string>decode-uri-component"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243857,
+      "title": "decode-uri-component vulnerable to denial of service via quadratic replacement of percent-encoded runs",
+      "module_name": "decode-uri-component",
+      "vulnerable_versions": "<=0.5.0",
+      "patched_versions": ">=0.5.1",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-qr28-fpjm-wq7f",
+      "url": "https://github.com/advisories/GHSA-qr28-fpjm-wq7f"
+    },
+    "1244003": {
+      "findings": [
+        {
+          "version": "1.16.0",
+          "paths": [
+            ".>truffle>@truffle/db-loader>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects",
+            ".>truffle>@truffle/db>@truffle/config>@truffle/events>@truffle/dashboard-message-bus-client>axios>follow-redirects"
+          ],
+          "dev": true,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1244003,
+      "title": "follow-redirects: Cross-realm sensitiveHeaders arrays are discarded and custom credentials can follow redirects",
+      "module_name": "follow-redirects",
+      "vulnerable_versions": ">=1.16.0 <=1.16.1",
+      "patched_versions": ">=1.16.2",
+      "severity": "high",
+      "cwe": "CWE-201",
+      "github_advisory_id": "GHSA-mrwp-f3q8-3g9p",
+      "url": "https://github.com/advisories/GHSA-mrwp-f3q8-3g9p"
+    },
+    "1244012": {
+      "findings": [
+        {
+          "version": "10.2.6",
+          "paths": [
+            ".>@truffle/contract>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch",
+            ".>@eslint/js>eslint>@eslint/config-array>minimatch",
+            ".>@eslint/js>eslint>minimatch",
+            ".>eslint>@eslint/config-array>minimatch",
+            ".>eslint>minimatch",
+            ".>eslint-plugin-react-hooks>eslint>@eslint/config-array>minimatch",
+            ".>eslint-plugin-react-hooks>eslint>minimatch",
+            ".>eslint-plugin-react-refresh>eslint>@eslint/config-array>minimatch",
+            ".>eslint-plugin-react-refresh>eslint>minimatch",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch",
+            ".>eslint-plugin-regexp>@eslint-community/eslint-utils>eslint>minimatch",
+            ".>eslint-plugin-regexp>eslint>@eslint/config-array>minimatch",
+            ".>eslint-plugin-regexp>eslint>minimatch",
+            ".>truffle>@truffle/debugger>@ensdomains/ensjs>@ensdomains/ens>solc>fs-extra>rimraf>glob>minimatch",
+            ".>truffle>mocha>glob>minimatch",
+            ".>truffle>mocha>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/parser>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/parser>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            ".>typescript-eslint>@typescript-eslint/utils>@typescript-eslint/typescript-estree>minimatch",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>@typescript-eslint/utils>eslint>minimatch",
+            ".>typescript-eslint>eslint>@eslint/config-array>minimatch",
+            ".>typescript-eslint>eslint>minimatch"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1244012,
+      "title": "minimatch has potential denial of service via globparts amplification",
+      "module_name": "minimatch",
+      "vulnerable_versions": "<11.0.1",
+      "patched_versions": ">=11.0.1",
+      "severity": "moderate",
+      "cwe": "CWE-405",
+      "github_advisory_id": "GHSA-g3hv-75wg-m249",
+      "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 6,
+      "moderate": 20,
+      "high": 15,
+      "critical": 1
+    },
+    "dependencies": 601,
+    "devDependencies": 654,
+    "optionalDependencies": 258,
+    "totalDependencies": 1271
+  }
+}

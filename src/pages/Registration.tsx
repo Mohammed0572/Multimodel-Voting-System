@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
 import { API_BASE } from "../context/AuthContext";
 import { createWorker } from "tesseract.js";
+
+import { useCamera } from "../lib/useCamera";
 
 type Status = {
   message: string;
@@ -116,7 +117,6 @@ export function extractFields(text: string) {
 }
 
 const Registration = () => {
-  const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<Status>({ message: "", type: "info" });
@@ -129,19 +129,11 @@ const Registration = () => {
   const [validity, setValidity] = useState("");
   const [dob, setDob] = useState("");
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const { videoRef, mountedRef, abortRef, startCamera, stopCamera } = useCamera();
+  const processingRef = useRef(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    };
-  }, []);
-
   const updateStatus = (message: string, type: Status["type"] = "info") => {
-    setStatus({ message, type });
+    if (mountedRef.current) setStatus({ message, type });
   };
 
   const waitForVideoFrame = async (video: HTMLVideoElement) => {
@@ -187,15 +179,15 @@ const Registration = () => {
       );
     }
 
-    const targetWidth = Math.min(video.videoWidth, 960);
-    const targetHeight = Math.round(
-      (video.videoHeight / video.videoWidth) * targetWidth,
-    );
+    const scale = Math.min(1, 640 / Math.max(video.videoWidth, video.videoHeight));
+    const targetWidth = Math.round(video.videoWidth * scale);
+    const targetHeight = Math.round(video.videoHeight * scale);
     canvas.width = targetWidth;
     canvas.height = targetHeight;
 
     const frames: string[] = [];
     for (let index = 0; index < 5; index += 1) {
+      if (!mountedRef.current) throw new Error("Capture cancelled.");
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       frames.push(canvas.toDataURL("image/jpeg", 0.72));
       if (index < 4) {
@@ -214,8 +206,8 @@ const Registration = () => {
 
     try {
       const worker = await createWorker("eng");
-      const { data } = await worker.recognize(file);
-      await worker.terminate();
+      const { data } = await worker.recognize(file).finally(() => worker.terminate());
+      if (!mountedRef.current) return;
 
       const extracted = extractFields(data.text);
       setName(extracted.name);
@@ -237,7 +229,8 @@ const Registration = () => {
       );
       setStep(2);
     } finally {
-      setIsProcessing(false);
+      processingRef.current = false;
+      if (mountedRef.current) setIsProcessing(false);
     }
   };
 
@@ -256,35 +249,20 @@ const Registration = () => {
   };
 
   const startWebcam = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      updateStatus("This browser does not support camera access.", "error");
-      return;
-    }
     try {
-      updateStatus("Requesting camera access…");
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
+      updateStatus("Camera initializing…");
+      if (await startCamera()) {
+        setIsCameraActive(true);
+        updateStatus("Camera active. Keep your face steady to capture.");
+        setStep(3);
       }
-      setIsCameraActive(true);
-      updateStatus("Camera active. Keep face steady to capture.", "success");
-      setStep(3);
-    } catch {
-      updateStatus("Camera access denied.", "error");
+    } catch (error) {
+      updateStatus(error instanceof Error ? error.message : "Camera unavailable.", "error");
     }
   };
 
   const registerUser = async () => {
+    if (processingRef.current) return;
     if (!usn.trim()) {
       updateStatus("USN is required.", "error");
       return;
@@ -301,6 +279,7 @@ const Registration = () => {
     if (!context) return;
 
     setIsProcessing(true);
+    processingRef.current = true;
     updateStatus("Capturing face samples and registering...");
 
     try {
@@ -308,6 +287,7 @@ const Registration = () => {
 
       const response = await fetch(`${API_BASE}/register-user`, {
         method: "POST",
+        signal: abortRef.current.signal,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
@@ -328,6 +308,9 @@ const Registration = () => {
       }
 
       const result = await response.json();
+      stopCamera();
+      if (!mountedRef.current) return;
+      setIsCameraActive(false);
       if (result.pending_review) {
         updateStatus(
           "Replacement face image submitted. An administrator must check your ID card and approve it before it can be used to log in.",
@@ -337,10 +320,9 @@ const Registration = () => {
       }
 
       updateStatus(
-        "Registration successful! Redirecting to login...",
+        "Face profile saved. An administrator must verify your ID before your first login.",
         "success",
       );
-      setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
       updateStatus(
         error instanceof TypeError && error.message === "Failed to fetch"
@@ -351,7 +333,8 @@ const Registration = () => {
         "error",
       );
     } finally {
-      setIsProcessing(false);
+      processingRef.current = false;
+      if (mountedRef.current) setIsProcessing(false);
     }
   };
 
