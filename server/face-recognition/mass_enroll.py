@@ -1,11 +1,13 @@
 import os
 import sqlite3
 import json
+from pathlib import Path
 import face_recognition
 
-DB_PATH = "face_voter_db.sqlite"
-IMAGES_DIR = "enrollment_images"
-CSBS_SEED_PATH = "csbs_students.json"
+BASE_DIR = Path(__file__).resolve().parent
+DB_PATH = os.getenv("FACE_DB_PATH", str(BASE_DIR / "face_voter_db.sqlite"))
+IMAGES_DIR = str(BASE_DIR / "enrollment_images")
+CSBS_SEED_PATH = str(BASE_DIR / "csbs_students.json")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -24,6 +26,12 @@ def init_db():
             verified_at    TEXT
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_voters (
+            voter_id   TEXT PRIMARY KEY NOT NULL,
+            deleted_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+    """)
     existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(voters)").fetchall()}
     for column, definition in {
         "student_name": "TEXT NOT NULL DEFAULT ''",
@@ -39,11 +47,14 @@ def init_db():
     if os.path.exists(CSBS_SEED_PATH):
         for student in json.load(open(CSBS_SEED_PATH, encoding="utf-8")):
             cursor.execute(
-                """INSERT INTO voters (voter_id, role, student_name, branch, class_name, batch)
-                   VALUES (?, 'user', ?, 'CB', 'CSBS', ?)
+                """INSERT INTO voters (voter_id, role, face_encoding, student_name, branch, class_name, batch)
+                   SELECT ?, 'user', '', ?, 'CB', 'CSBS', ?
+                   WHERE NOT EXISTS (
+                       SELECT 1 FROM deleted_voters WHERE voter_id = ?
+                   )
                    ON CONFLICT(voter_id) DO UPDATE SET student_name=excluded.student_name,
                      branch=excluded.branch, class_name=excluded.class_name, batch=excluded.batch""",
-                (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023"),
+                (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023", student["usn"].lower()),
             )
     conn.commit()
     return conn
