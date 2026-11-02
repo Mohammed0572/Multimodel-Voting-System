@@ -207,7 +207,7 @@ def main() -> None:
 
                 cv2.putText(
                     frame,
-                    "Real User" if liveness.is_live else "Fake / No Liveness",
+                    "Challenge completed" if liveness.is_live else "Not verified",
                     (10, 150),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.8,

@@ -105,6 +105,7 @@ class BlinkLivenessDetector:
     def reset(self) -> None:
         """Start a fresh liveness challenge."""
         self.blink_count = 0
+        self.observed_open = False
         self.closed_frames = 0
         self.head_moved = False
         self.live_confirmed = False
@@ -127,6 +128,9 @@ class BlinkLivenessDetector:
         current_time = monotonic() if now is None else now
         landmarks_list = list(faces_landmarks)
         locations = list(face_locations or [])
+        if len(landmarks_list) > 1 or len(locations) > 1:
+            self.reset()
+            return self._handle_missing_face(current_time, frame_weight)
         primary_index = self._primary_face_index(locations)
         primary_landmarks = (
             landmarks_list[primary_index]
@@ -191,7 +195,8 @@ class BlinkLivenessDetector:
             self.closed_frames += frame_weight
             return False
 
-        blink_frames = self.closed_frames
+        blink_frames = self.closed_frames if self.observed_open else 0
+        self.observed_open = True
         self.closed_frames = 0
 
         if self.min_closed_frames <= blink_frames <= self.max_closed_frames:

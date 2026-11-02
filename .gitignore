@@ -36,8 +36,12 @@ env/
 *.sqlite3
 *.db
 *.sqlite.*
+*.sqlite-wal
+*.sqlite-shm
 
 # ── Face Recognition (binary data) ───────────────
+server/face-recognition/models/*.onnx
+server/face-recognition/models/*.download
 encodings.pkl
 *.pkl
 *.pickle

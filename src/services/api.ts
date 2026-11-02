@@ -38,12 +38,19 @@ export async function apiRequest<T>(
   return parseResponse(response) as Promise<T>;
 }
 
+export interface VoteResult {
+  status: "NONE" | "PENDING" | "SUBMITTED" | "CONFIRMED" | "FAILED";
+  success: boolean;
+  transaction_hash: string | null;
+  tx_hash?: string | null;
+  detail?: string;
+  replayed?: boolean;
+}
+
+export const getVoteStatus = () => apiRequest<VoteResult>("/voter/vote-status");
+
 export function castVote(candidateId: number) {
-  return apiRequest<{
-    success: boolean;
-    transaction_hash: string;
-    tx_hash?: string;
-  }>("/api/v1/voter/cast", {
+  return apiRequest<VoteResult>("/api/v1/voter/cast", {
     method: "POST",
     body: JSON.stringify({
       candidate_id: candidateId,

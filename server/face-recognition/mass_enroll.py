@@ -1,125 +1,62 @@
-import os
-import sqlite3
+"""Offline enrollment utility for trusted operators; uses the API's validation.
+
+Place at least five images per voter in enrollment_images using
+VOTER-ID__01.jpg ... VOTER-ID__05.jpg. Existing profiles require admin approval.
+Raw operator-supplied files are not deleted automatically; remove them securely
+when the enrollment task is finished.
+"""
+import base64
+from collections import defaultdict
 import json
-import face_recognition
+from pathlib import Path
 
-DB_PATH = "face_voter_db.sqlite"
-IMAGES_DIR = "enrollment_images"
-CSBS_SEED_PATH = "csbs_students.json"
+from fastapi import HTTPException
+from main import get_db, init_db, get_enrollment_profile, _face_workers
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS voters (
-            voter_id       TEXT PRIMARY KEY NOT NULL,
-            role           TEXT NOT NULL DEFAULT 'user',
-            face_encoding  TEXT NOT NULL DEFAULT '',
-            student_name   TEXT NOT NULL DEFAULT '',
-            branch         TEXT NOT NULL DEFAULT '',
-            class_name     TEXT NOT NULL DEFAULT '',
-            batch           TEXT NOT NULL DEFAULT '',
-            id_verified    INTEGER NOT NULL DEFAULT 0,
-            verified_by    TEXT,
-            verified_at    TEXT
-        )
-    """)
-    existing_columns = {row[1] for row in cursor.execute("PRAGMA table_info(voters)").fetchall()}
-    for column, definition in {
-        "student_name": "TEXT NOT NULL DEFAULT ''",
-        "branch": "TEXT NOT NULL DEFAULT ''",
-        "class_name": "TEXT NOT NULL DEFAULT ''",
-        "batch": "TEXT NOT NULL DEFAULT ''",
-        "id_verified": "INTEGER NOT NULL DEFAULT 0",
-        "verified_by": "TEXT",
-        "verified_at": "TEXT",
-    }.items():
-        if column not in existing_columns:
-            cursor.execute(f"ALTER TABLE voters ADD COLUMN {column} {definition}")
-    if os.path.exists(CSBS_SEED_PATH):
-        for student in json.load(open(CSBS_SEED_PATH, encoding="utf-8")):
-            cursor.execute(
-                """INSERT INTO voters (voter_id, role, student_name, branch, class_name, batch)
-                   VALUES (?, 'user', ?, 'CB', 'CSBS', ?)
-                   ON CONFLICT(voter_id) DO UPDATE SET student_name=excluded.student_name,
-                     branch=excluded.branch, class_name=excluded.class_name, batch=excluded.batch""",
-                (student["usn"].lower(), student.get("student_name", ""), "2024" if student["usn"].startswith("1KG24") else "2023"),
-            )
-    conn.commit()
-    return conn
+IMAGES_DIR = Path(__file__).resolve().with_name("enrollment_images")
+
+
+def _mass_enroll():
+    IMAGES_DIR.mkdir(exist_ok=True)
+    init_db()
+    samples = defaultdict(list)
+    for path in sorted(IMAGES_DIR.iterdir()):
+        if path.suffix.lower() not in (".png", ".jpg", ".jpeg"):
+            continue
+        voter_id = path.stem.rsplit("__", 1)[0].strip().lower()
+        if not voter_id or len(voter_id) > 100 or path.stat().st_size > 1_500_000:
+            print("Skipped invalid enrollment file")
+            continue
+        samples[voter_id].append(base64.b64encode(path.read_bytes()).decode("ascii"))
+    enrolled = 0
+    for voter_id, frames in samples.items():
+        try:
+            encoded = json.dumps(get_enrollment_profile(frames[:10]))
+            with get_db() as conn:
+                conn.execute("BEGIN IMMEDIATE")
+                existing = conn.execute("SELECT deleted,role,face_encoding FROM voters WHERE voter_id=?", (voter_id,)).fetchone()
+                if existing and (existing["deleted"] or existing["role"] != "user"):
+                    raise HTTPException(403, "Inactive or non-voter account")
+                if existing and existing["face_encoding"]:
+                    conn.execute("UPDATE voters SET pending_face_encoding=? WHERE voter_id=?", (encoded,voter_id))
+                else:
+                    conn.execute("""INSERT INTO voters(voter_id,face_encoding) VALUES (?,?)
+                        ON CONFLICT(voter_id) DO UPDATE SET face_encoding=excluded.face_encoding,
+                        id_verified=0,session_version=voters.session_version+1""", (voter_id,encoded))
+                conn.commit()
+            enrolled += 1
+        except HTTPException as error:
+            print(f"Enrollment rejected: {error.detail}")
+    print(f"Prepared {enrolled} enrollment profiles. Administrator approval is required.")
+
 
 def mass_enroll():
-    if not os.path.exists(IMAGES_DIR):
-        print(f"Directory '{IMAGES_DIR}' not found. Creating it.")
-        os.makedirs(IMAGES_DIR)
-        print("Please place voter images in this directory. The filename (without extension) will be used as the voter_id.")
-        return
+    _face_workers.start()
+    try:
+        _mass_enroll()
+    finally:
+        _face_workers.close()
 
-    conn = init_db()
-    cursor = conn.cursor()
-
-    from collections import defaultdict
-    import numpy as np
-
-    voter_samples = defaultdict(list)
-    failed = 0
-
-    for filename in sorted(os.listdir(IMAGES_DIR)):
-        if not filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-            continue
-
-        raw_id = os.path.splitext(filename)[0]
-        # Support voter_1, voter_2 or just voter
-        voter_id = raw_id.split('_')[0].strip().lower() if '_' in raw_id else raw_id.strip().lower()
-        filepath = os.path.join(IMAGES_DIR, filename)
-
-        try:
-            image = face_recognition.load_image_file(filepath)
-            face_locations = face_recognition.face_locations(image)
-
-            if len(face_locations) == 0:
-                print(f"[{raw_id}] Failed: No face detected in {filename}")
-                failed += 1
-                continue
-            if len(face_locations) > 1:
-                print(f"[{raw_id}] Failed: Multiple faces detected in {filename}. Please use an image with only one face.")
-                failed += 1
-                continue
-
-            # Generate encoding
-            encoding = face_recognition.face_encodings(image, known_face_locations=face_locations)[0]
-            voter_samples[voter_id].append(encoding)
-            print(f"[{voter_id}] Processed sample from {filename}")
-
-        except Exception as e:
-            print(f"[{raw_id}] Error processing {filename}: {e}")
-            failed += 1
-
-    # Clean previous table entries and insert averaged encodings
-    enrolled = 0
-    for voter_id, enc_list in voter_samples.items():
-        averaged = np.mean(enc_list, axis=0)
-        encoding_json = json.dumps(averaged.tolist())
-
-        cursor.execute(
-            """
-            INSERT INTO voters (voter_id, role, face_encoding)
-            VALUES (?, ?, ?)
-            ON CONFLICT(voter_id) DO UPDATE SET
-                face_encoding = excluded.face_encoding
-            """,
-            (voter_id, 'user', encoding_json),
-        )
-        conn.commit()
-        print(f"[{voter_id}] Successfully enrolled with {len(enc_list)} sample(s).")
-        enrolled += 1
-
-    conn.commit()
-    conn.close()
-
-    print("\n--- Mass Enrollment Summary ---")
-    print(f"Successfully enrolled voters: {enrolled}")
-    print(f"Failed image samples: {failed}")
 
 if __name__ == "__main__":
     mass_enroll()

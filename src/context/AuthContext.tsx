@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { API_BASE } from "../services/apiBase";
@@ -31,16 +32,22 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const sessionEpoch = useRef(0);
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   const refreshSession = useCallback(async () => {
+    const epoch = sessionEpoch.current;
     try {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: "POST",
         credentials: "include",
       });
-      if (!response.ok) return false;
+      if (epoch !== sessionEpoch.current) return false;
+      if (!response.ok) {
+        if (response.status === 401) setSession(null);
+        return false;
+      }
 
       const data = await response.json();
       setSession({
@@ -60,6 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let cancelled = false;
+    const epoch = sessionEpoch.current;
 
     const checkSession = async () => {
       try {
@@ -67,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           method: "GET",
           credentials: "include",
         });
-        if (!cancelled && response.ok) {
+        if (!cancelled && epoch === sessionEpoch.current && response.ok) {
           const data = await response.json();
           setSession({
             voter_id: data.voter_id,
@@ -104,10 +112,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [refreshSession, session]);
 
   const setAuth = useCallback((newSession: AuthSession) => {
+    sessionEpoch.current += 1;
     setSession(newSession);
   }, []);
 
   const logout = useCallback(async () => {
+    sessionEpoch.current += 1;
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: "POST",

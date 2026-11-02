@@ -96,7 +96,7 @@ describe("Analytics Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("ELECTION CONCLUDED · FINAL CERTIFIED")).toBeInTheDocument();
+      expect(screen.getByText("ELECTION CONCLUDED · FINAL RESULTS")).toBeInTheDocument();
       expect(screen.getByText("Official Certified Election Winner")).toBeInTheDocument();
     });
   });

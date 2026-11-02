@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useWeb3 } from "../context/Web3Context";
 import { Link } from "react-router-dom";
 import { Chakra } from "../components/Chakra";
@@ -13,7 +13,7 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { API_BASE, useAuth } from "../context/AuthContext";
-import { castVote } from "../services/api";
+import { castVote, getVoteStatus } from "../services/api";
 import { announceVoiceMessage } from "../lib/voiceAssistant";
 
 interface Candidate {
@@ -34,6 +34,7 @@ interface Eligibility {
   eligible: boolean;
   voted: boolean;
   credential_ready: boolean;
+  vote_status?: string;
   tx_hash?: string | null;
 }
 
@@ -41,11 +42,20 @@ const COLORS = ["#ff671f", "#1e40af", "#046a38", "#0b1f3a", "#64748b"];
 const SYMBOLS = ["🪷", "✋", "🌾", "🚲", "⊘"];
 
 const Voting = () => {
-  const { account, contract, isLoading, error, connectWallet } = useWeb3();
+  const {
+    account,
+    contract,
+    isLoading,
+    error,
+    electionId,
+    electionName,
+    connectWallet,
+  } = useWeb3();
   const { session, logout } = useAuth();
 
+  const submittingRef = useRef(false);
+  const votingRequestRef = useRef(0);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [electionName, setElectionName] = useState("");
   const [electionState, setElectionState] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState<boolean>(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
@@ -67,23 +77,8 @@ const Voting = () => {
   const [voteError, setVoteError] = useState<string | null>(null);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`${API_BASE}/election`, { credentials: "include" })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Unable to load election details.");
-        return response.json();
-      })
-      .then((data) => {
-        if (!cancelled) setElectionName(String(data.name || ""));
-      })
-      .catch((loadError) => console.error(loadError));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const loadVotingData = useCallback(async () => {
+    const requestId = ++votingRequestRef.current;
     const voterId = session?.voter_id?.trim();
     if (!voterId) {
       setHasVoted(false);
@@ -94,12 +89,14 @@ const Voting = () => {
       const eligibilityResponse = await fetch(`${API_BASE}/voter/eligibility`, {
         credentials: "include",
       });
+      if (requestId !== votingRequestRef.current) return;
       if (!eligibilityResponse.ok) {
         setEligibility(null);
         setIsCheckingEligibility(false);
         return;
       }
       const eligibilityData = (await eligibilityResponse.json()) as Eligibility;
+      if (requestId !== votingRequestRef.current) return;
       setEligibility(eligibilityData);
       setHasVoted(eligibilityData.voted);
       setCredentialReady(eligibilityData.credential_ready);
@@ -112,6 +109,7 @@ const Voting = () => {
       if (!contract) return;
 
       const stateResult = await contract.getElectionState();
+      if (requestId !== votingRequestRef.current) return;
       setElectionState(
         typeof stateResult.toNumber === "function"
           ? stateResult.toNumber()
@@ -121,6 +119,7 @@ const Voting = () => {
       const countRaw = contract.countCandidates
         ? await contract.countCandidates()
         : await contract.getCountCandidates();
+      if (requestId !== votingRequestRef.current) return;
       const count =
         typeof countRaw.toNumber === "function"
           ? countRaw.toNumber()
@@ -128,6 +127,7 @@ const Voting = () => {
       const candidatesArray = [];
       for (let i = 1; i <= count; i++) {
         const data = await contract.getCandidate(i);
+        if (requestId !== votingRequestRef.current) return;
         candidatesArray.push({
           id: typeof data[0].toNumber === "function" ? data[0].toNumber() : Number(data[0]),
           name: data[1],
@@ -140,18 +140,78 @@ const Voting = () => {
       setCandidates(candidatesArray);
 
       if (!eligibilityData.eligible) return;
-      setStage(eligibilityData.voted ? "sealed" : "choose");
+      setStage(eligibilityData.voted ? "sealed" : ["PENDING", "SUBMITTED"].includes(eligibilityData.vote_status || "") ? "sealing" : "choose");
     } catch (error) {
+      if (requestId !== votingRequestRef.current) return;
       console.error("Error loading voting data:", error);
       setIsCheckingEligibility(false);
     }
   }, [contract, session?.voter_id]);
 
   useEffect(() => {
-    if (contract) {
-      loadVotingData();
-    }
+    if (!contract) return;
+    const refresh = () => void loadVotingData();
+    const intervalId = window.setInterval(refresh, 10_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    refresh();
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
   }, [contract, loadVotingData]);
+
+  useEffect(() => {
+    setCandidates([]);
+    setElectionState(null);
+    setHasVoted(false);
+    setSelectedCandidateId(null);
+    setStage("choose");
+    setTxHash("");
+    setReceiptCandidate(null);
+    setEligibility(null);
+    setCredentialReady(false);
+    setTransactionHash(null);
+    setVoteError(null);
+    setIsCheckingEligibility(true);
+  }, [electionId]);
+
+  useEffect(() => {
+    if (stage !== "sealing") return;
+    let cancelled = false;
+    let timer: number;
+    const poll = async () => {
+      try {
+        const result = await getVoteStatus();
+        if (cancelled) return;
+        if (result.status === "CONFIRMED" && result.success && result.transaction_hash) {
+          setTxHash(result.transaction_hash);
+          setTransactionHash(result.transaction_hash);
+          setHasVoted(true);
+          setCredentialReady(false);
+          setStage("sealed");
+          setVoteError(null);
+          announceVoiceMessage("Your vote is confirmed on the blockchain.");
+          return;
+        }
+        if (result.status === "FAILED") {
+          setVoteError(result.detail || "Transaction failed. Refresh before retrying.");
+          setTransactionHash(null);
+          setStage("review");
+          return;
+        }
+      } catch {
+        if (!cancelled) setVoteError("Confirmation is unavailable. Your vote may still be pending; do not submit another ballot.");
+      }
+      if (!cancelled) timer = window.setTimeout(poll, 3000);
+    };
+    timer = window.setTimeout(poll, 3000);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [stage]);
 
   // NOTA must be registered on-chain by an administrator. A client-only
   // candidate ID would be rejected by the contract as invalid.
@@ -164,7 +224,7 @@ const Voting = () => {
   };
 
   const handleVote = async () => {
-    if (stage !== "review" || hasVoted || !selectedCandidateId || isSubmitting || transactionHash) return;
+    if (stage !== "review" || hasVoted || !selectedCandidateId || isSubmitting || submittingRef.current || transactionHash) return;
     if (!credentialReady) {
       setVoteError(
         "Your secure voting session is not ready. Please authenticate again.",
@@ -180,6 +240,7 @@ const Voting = () => {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setVoteError(null);
     setStage("sealing");
@@ -189,24 +250,35 @@ const Voting = () => {
       const submittedHash = result.transaction_hash || result.tx_hash || "";
       setTxHash(submittedHash);
       setTransactionHash(submittedHash);
-      setReceiptCandidate(chosen || null);
+      // Another tab may have reserved a different selection first.
+      setReceiptCandidate(result.replayed ? null : chosen || null);
+      if (!result.success || result.status !== "CONFIRMED" || !submittedHash) {
+        setCredentialReady(false);
+        return;
+      }
       setHasVoted(true);
       setCredentialReady(false);
       setStage("sealed");
       announceVoiceMessage(
         "Your vote has been recorded successfully. Your ballot is sealed on the blockchain. Thank you for voting.",
       );
-      await loadVotingData();
+
     } catch (error) {
       console.error("Voting error:", error);
       const message =
         error instanceof Error
           ? error.message
-          : "The ballot was not recorded. Please try again.";
+          : "Vote submission could not be confirmed. Check status before retrying.";
       setVoteError(message);
-      announceVoiceMessage(`Your vote was not recorded. ${message}`);
-      setStage("review");
+      announceVoiceMessage(message);
+      try {
+        const result = await getVoteStatus();
+        if (["NONE", "FAILED"].includes(result.status)) setStage("review");
+      } catch {
+        // Keep polling: a network error cannot prove that a ballot failed.
+      }
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -632,8 +704,10 @@ const Voting = () => {
               <div className="mt-6 font-display text-2xl">
                 Sealing your ballot on chain…
               </div>
+              {voteError && <p role="alert" className="mt-4 max-w-md text-center">{voteError}</p>}
+              <Link to="/" className="mt-4 underline">Return home</Link>
               <div className="mt-2 font-mono text-xs text-paper/60">
-                Confirm the transaction in your wallet (e.g. MetaMask)
+                Waiting for blockchain confirmation. You can safely return to this page.
               </div>
             </div>
           </div>
@@ -669,19 +743,16 @@ function Receipt({
             Thank you for voting.
           </h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            Keep this receipt. You can verify your vote on the public
-            Prajatantra explorer at any time using the transaction hash below.
-            Your identity is never revealed.
+            Keep this transaction hash to check confirmation on the configured
+            blockchain. Ballot choices are public on the ledger; the service
+            retains a private voter-to-transaction mapping.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <a
-              href="#"
-              className="inline-flex items-center gap-2 rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper hover:bg-saffron"
+            <button
+              onClick={() => window.print()}
+              className="rounded-md border border-hairline px-4 py-2 text-sm font-medium hover:border-ink"
             >
-              Verify on explorer <ArrowRight className="size-4" />
-            </a>
-            <button className="rounded-md border border-hairline px-4 py-2 text-sm font-medium hover:border-ink">
-              Download PDF
+              Print receipt
             </button>
             <button
               onClick={onReset}
@@ -694,7 +765,6 @@ function Receipt({
         <dl className="space-y-3 rounded-md bg-paper-warm p-6 font-mono text-xs">
           <Row k="Constituency" v="Local / Dev Network" />
           <Row k="Tx hash" v={txHash || "Pending confirmation"} />
-          <Row k="Timestamp" v={new Date().toLocaleString("en-IN")} />
           {candidate && (
             <Row k="Selection" v={`${candidate.name} · ${candidate.party}`} />
           )}

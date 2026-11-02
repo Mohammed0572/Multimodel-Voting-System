@@ -1,4 +1,4 @@
-.PHONY: help install install-node install-python install-tesseract compile ganache migrate backend frontend dev test test-frontend test-backend test-contracts build lint clean docker-up docker-down demo
+.PHONY: help install install-node install-python install-tesseract compile ganache migrate backend frontend dev test test-frontend test-backend test-contracts build lint clean docker-up docker-down demo demo-new-election
 
 # Executable configurations
 PNPM ?= pnpm
@@ -64,6 +64,7 @@ help:
 	@echo "  make test-backend      - Run Python/Pytest backend tests"
 	@echo "  make test-contracts    - Run Truffle smart contract tests"
 	@echo "  make demo              - Launch full demo (Ganache, migrations, backend, frontend)"
+	@echo "  make demo-new-election - Deploy a fresh election contract and launch the demo"
 	@echo "  make docker-up         - Start full containerized stack via Docker Compose"
 	@echo "  make docker-down       - Stop Docker Compose stack"
 	@echo "  make clean             - Remove build and cache artifacts"
@@ -79,8 +80,10 @@ install-python:
 	@echo "[*] Installing Python backend dependencies..."
 	$(BACKEND_PY) -c "import sys; assert sys.version_info >= (3, 10), f'Python >= 3.10 is required; found {sys.version.split()[0]}'"
 	$(CREATE_PYTHON_VENV)
+	$(PYTHON_VENV) -m pip install --upgrade "pip>=26.2"
 	$(PYTHON_VENV) -m pip install -r server/face-recognition/requirements.txt
 	$(PYTHON_VENV) -m pip install --no-deps "face-recognition>=1.3.0"
+	$(PYTHON_VENV) server/face-recognition/face_models.py
 
 install-tesseract:
 	@echo "[*] Checking Tesseract OCR dependency..."
@@ -99,7 +102,7 @@ ganache:
 
 migrate:
 	@echo "[*] Deploying smart contracts to Ganache..."
-	$(TRUFFLE) migrate --reset --config server/blockchain/truffle-config.js
+	$(TRUFFLE) migrate --config server/blockchain/truffle-config.js
 
 backend:
 	@echo "[*] Starting FastAPI face recognition backend on http://127.0.0.1:8000..."
@@ -117,7 +120,7 @@ lint:
 	@echo "[*] Running linter..."
 	$(PNPM) run lint
 
-test: test-frontend test-backend test-contracts
+test: compile test-frontend test-backend test-contracts
 
 test-frontend:
 	@echo "[*] Running frontend vitest suite..."
@@ -139,8 +142,11 @@ docker-down:
 	@echo "[*] Stopping Docker Compose stack..."
 	docker compose -f server/docker-compose.yml down
 
-demo:
+demo: install-node install-python
 	@node scripts/start-demo.mjs
+
+demo-new-election: install-node install-python
+	@node scripts/start-demo.mjs --new-election
 
 clean:
 	@echo "[*] Cleaning build artifacts and cache..."

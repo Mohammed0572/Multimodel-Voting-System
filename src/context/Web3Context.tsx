@@ -4,12 +4,14 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import Web3 from "web3";
 // @ts-expect-error @truffle/contract does not publish compatible TypeScript declarations.
 import TruffleContract from "@truffle/contract";
 import votingArtifacts from "../contracts/Voting.json";
+import { API_BASE } from "./AuthContext";
 
 import { isValidContractAddress, normalizeChainId } from "../utils/blockchain";
 
@@ -35,10 +37,20 @@ interface Web3ContextType {
   contract: any | null;
   isLoading: boolean;
   error: string | null;
+  electionId: string;
+  electionName: string;
   connectWallet: () => Promise<string | null>;
+  deployElection: (relayerAddress: string, from: string) => Promise<string>;
+  refreshElection: () => Promise<void>;
 }
 
 const Web3Context = createContext<Web3ContextType | undefined>(undefined);
+
+interface ElectionInfo {
+  election_id: string;
+  contract_address: string;
+  name: string;
+}
 
 export const useWeb3 = () => {
   const context = useContext(Web3Context);
@@ -71,6 +83,10 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
   const [contract, setContract] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [contractAddress, setContractAddress] = useState("");
+  const [electionId, setElectionId] = useState("");
+  const [electionName, setElectionName] = useState("");
+  const electionRequestRef = useRef(0);
 
   const connectWallet = useCallback(async () => {
     if (!window.ethereum || !web3) {
@@ -102,6 +118,64 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       return null;
     }
   }, [web3]);
+
+  const refreshElection = useCallback(async () => {
+    const requestId = ++electionRequestRef.current;
+    const response = await fetch(`${API_BASE}/election`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error("Unable to refresh the active election.");
+    }
+
+    const election = (await response.json()) as ElectionInfo;
+    if (requestId !== electionRequestRef.current) return;
+    if (
+      election.contract_address &&
+      !isValidContractAddress(election.contract_address)
+    ) {
+      throw new Error("The backend returned an invalid election contract address.");
+    }
+
+    setElectionId(String(election.election_id || "").toLowerCase());
+    setElectionName(String(election.name || ""));
+    if (
+      web3 &&
+      election.contract_address &&
+      election.contract_address.toLowerCase() !== contractAddress.toLowerCase()
+    ) {
+      const VotingContract = TruffleContract(votingArtifacts);
+      VotingContract.setProvider(web3.currentProvider);
+      if (account) VotingContract.defaults({ from: account });
+      const activeContract = await VotingContract.at(
+        election.contract_address,
+      );
+      if (requestId !== electionRequestRef.current) return;
+      setContract(activeContract);
+      setContractAddress(election.contract_address);
+      setError(null);
+    }
+  }, [account, contractAddress, web3]);
+
+  const deployElection = useCallback(
+    async (relayerAddress: string, from: string) => {
+      if (!web3) throw new Error("The blockchain network is not connected.");
+      const VotingContract = TruffleContract(votingArtifacts);
+      VotingContract.setProvider(web3.currentProvider);
+      const deployedContract = await VotingContract.new(relayerAddress, {
+        from,
+      });
+      const address = String(
+        deployedContract.address || deployedContract.options?.address || "",
+      );
+      if (!isValidContractAddress(address)) {
+        throw new Error("MetaMask deployed the election contract without a valid address.");
+      }
+      return address;
+    },
+    [web3],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -169,6 +243,9 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
           setWeb3(currentWeb3);
           setAccount(accounts[0] || null);
           setContract(instance);
+          setContractAddress(
+            String(instance?.address || instance?.options?.address || ""),
+          );
           setIsLoading(false);
         }
       } catch (err: any) {
@@ -201,9 +278,50 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!web3) return;
+    let active = true;
+    const refresh = () => {
+      void refreshElection().catch((refreshError) => {
+        if (active) {
+          console.error("Failed to refresh the active election.", refreshError);
+          setError(
+            refreshError instanceof Error
+              ? refreshError.message
+              : "Unable to refresh the active election.",
+          );
+        }
+      });
+    };
+    const intervalId = window.setInterval(refresh, 5_000);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    refresh();
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
+  }, [refreshElection, web3]);
+
   return (
     <Web3Context.Provider
-      value={{ web3, account, contract, isLoading, error, connectWallet }}
+      value={{
+        web3,
+        account,
+        contract,
+        isLoading,
+        error,
+        electionId,
+        electionName,
+        connectWallet,
+        deployElection,
+        refreshElection,
+      }}
     >
       {children}
     </Web3Context.Provider>

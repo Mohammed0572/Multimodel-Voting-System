@@ -5,3 +5,13 @@ dist
 .env
 .vscode
 .pytest_cache
+**/.env
+**/.env.*
+**/.venv
+**/__pycache__
+**/*.sqlite*
+**/*.db
+**/*.pkl
+**/*.pickle
+.ganache
+server/face-recognition/enrollment_images

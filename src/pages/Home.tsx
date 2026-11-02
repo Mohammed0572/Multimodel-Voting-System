@@ -364,13 +364,13 @@ export default function Home() {
               </div>
               <ul className="space-y-2 text-paper/80">
                 <li>
-                  <a href="#">Verify a vote</a>
+                  <Link to="/voting">Vote status</Link>
                 </li>
                 <li>
-                  <a href="#">Grievance redressal</a>
+                  <Link to="/contact">Contact the project team</Link>
                 </li>
                 <li>
-                  <a href="#">Helpline 1950</a>
+                  <Link to="/accessibility">Accessibility</Link>
                 </li>
               </ul>
             </div>
@@ -380,13 +380,13 @@ export default function Home() {
               </div>
               <ul className="space-y-2 text-paper/80">
                 <li>
-                  <a href="#">Public ledger</a>
+                  <Link to="/analytics">Election results</Link>
                 </li>
                 <li>
-                  <a href="#">Source code</a>
+                  <Link to="/terms">Project scope</Link>
                 </li>
                 <li>
-                  <a href="#">Audit reports</a>
+                  <Link to="/admin">Administrator audit reports</Link>
                 </li>
               </ul>
             </div>
