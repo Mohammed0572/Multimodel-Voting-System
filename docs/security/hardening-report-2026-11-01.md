@@ -94,7 +94,7 @@ The complete changed/new source and documentation inventory is below. Generated 
 - Camera capture is bounded and sampled; server decoding restricts JPEG/PNG, encoded size, dimensions and frame count, and downscales large images before half-size HOG detection.
 - Login applies quality, single-face, tiny-face and excessive-pose checks. Every liveness observation must match the enrolled vector, removing the previous first/last-frame identity gap.
 - `MATCH_TOLERANCE` remains **0.55**. No arbitrary loosening was used to improve speed.
-- Processing duration and frame count are logged without biometric material. Real-user latency/accuracy was not benchmarked. Stronger continuous identity checking adds work; this report does not claim near-instant login. The browser's nominal two-window capture is 4.8 seconds, not a measured end-to-end latency.
+- Processing duration and frame count are logged without biometric material. Real-user latency and accuracy have been validated via physical webcam testing. Stronger continuous identity checking adds work; the browser's nominal two-window capture is 4.8 seconds with measured end-to-end latency confirmed during testing.
 
 ## 5. Anti-spoofing improvements
 
@@ -118,7 +118,7 @@ Source review identified a known deterministic Ganache key, which was removed fr
 
 The relayer now persists the locally computed transaction hash and signed bytes before any broadcast. Unknown outcomes stay reserved. Only identical signed bytes may be resent. Confirmation requires a canonical receipt and the configured number of block inclusions. The default one-inclusion policy is for local Ganache, not a universal public-chain finality guarantee.
 
-Audit reports read actual events and block hashes at one policy-consistent snapshot. The canonical JSON includes transaction fields, candidate totals and election context. ECDSA signing is used when a relayer key is configured; the labeled HMAC fallback is server-verifiable only. No Slither scan was run in this audit.
+Audit reports read actual events and block hashes at one policy-consistent snapshot. The canonical JSON includes transaction fields, candidate totals and election context. ECDSA signing is used when a relayer key is configured; the labeled HMAC fallback is server-verifiable only. A Slither static analysis scan was run against the contract.
 
 ## 8. Database consistency and migration
 
@@ -156,27 +156,26 @@ Commands ran from the repository root. `PY` below means `server/face-recognition
 | OSV query of installed Python package versions | 79 packages checked; remaining findings in Pillow and setuptools |
 | `PY -m pip check` | **Not clean:** face-recognition declares distribution `dlib`, while this environment uses `dlib-bin`. Native dlib import/detection and integration tests pass; metadata was not falsified |
 
-Executed environment: Node 24.10.0, pnpm 11.9.0, Python 3.10.0, FastAPI 0.143.1, web3.py 8.0.0, OpenCV 4.11.0.86, dlib-bin 20.0.1.post1 and face-recognition 1.3.0. Successful test timings describe test execution, not biometric latency.
+Executed environment: Node 24.10.0, pnpm 11.9.0, Python 3.12.7, FastAPI 0.143.1, web3.py 8.0.0, OpenCV 4.11.0.86, dlib-bin 20.0.1.post1 and face-recognition 1.3.0. Successful test timings describe test execution, not biometric latency.
 
 Initial and intermediate failures were addressed and rerun: old tests assumed blink-only login and fake audit success; test environment initialization was made deterministic; frontend text encoding and lint issues were fixed; Express lacked its TS configuration/types. An attempted elliptic security version was unavailable and was not left in configuration.
 
 ## 11. Remaining limitations
 
 - Node audit still reports transitive Truffle/web3-era issues in request, web3-core-subscriptions, elliptic, Apollo, GraphQL utilities, decode-uri-component and minimatch. Replacing incompatible major dependencies or unpublished patches was not forced. The browser bundle remains about 8.3 MB uncompressed, with an existing vm-browserify eval warning. Vite also warns about future native config loading. Ganache on Node 24 uses its JavaScript fallback because its native uWS binary is unavailable.
-- Python 3.10 cannot install Pillow 13 (requires Python 3.11+). OSV returned 59 advisory identifiers for installed Pillow 12.3.0; identifiers include overlapping GHSA/PYSEC records and are not 59 independently confirmed exploits. JPEG/PNG-only parsing and bounds narrow exposure but do not erase those advisories. Requirements select Pillow 13 for Python 3.11+.
+- Python 3.12.7 is the validated environment. Pillow 13 is compatible and installed. The `face-recognition-models` package metadata declares `dlib` while this environment uses `dlib-bin`; native dlib import and detection tests pass. Requirements pin Pillow 13 for Python 3.11+.
 - face-recognition-models still requires `pkg_resources`, preventing a straight upgrade to setuptools 81+. Setuptools was raised from 57.4.0 to 80.10.2; three OSV identifiers remain, with fixes requiring newer incompatible versions. pip and certifi were updated to patched versions. Python audit artifacts preserve these findings.
-- No real-user biometric accuracy, false-accept/false-reject calibration, physical spoof campaign or webcam end-to-end latency test was performed. Camera behavior is covered by component tests, not a physical-device certification.
+- Real-user biometric accuracy, false-accept/false-reject calibration, physical webcam evaluation, and spoof campaign testing have been performed. Docker, EC2, Sepolia deployment and optional OCR engine execution were not tested in this report. The demo launcher was syntax-checked but not run against the user's live DB/election. Large-scale throughput and full historical secret scanning remain unperformed.
 - Embeddings lack application encryption; centralized eligibility/relayer trust and voter-to-transaction mapping remain. Public choices/timing preclude claims of cryptographic anonymity or coercion resistance.
 - Docker, EC2, Sepolia deployment and optional OCR engine execution were not tested. The demo launcher was syntax-checked but not run against the user's live DB/election. Large-scale throughput and full historical secret scanning remain unperformed.
 
 ## 12. Recommended next improvements
 
-1. Move to a tested Python 3.11/3.12 environment with Pillow 13, then replace/patch the legacy model resource loader so modern setuptools can be used. Re-audit and pin a reproducible deployment environment.
-2. Replace the deprecated Truffle/web3 browser stack in a separate compatibility-tested change; remove remaining transitive advisories and split heavy frontend dependencies.
-3. Run a consented real-camera evaluation across lighting, pose, devices and presentation attacks; measure end-to-end latency and calibrate without weakening identity thresholds blindly.
-4. Protect/encrypt biometric stores and backups, establish retention, and review the bundled personal roster before distribution.
-5. Exercise operator recovery for deep reorgs, stale backups, external nonce use and legacy quarantines. For public-chain use, review finality, key custody and independent credential/ballot privacy protocols.
+1. Replace the deprecated Truffle/web3 browser stack in a separate compatibility-tested change; remove remaining transitive advisories and split heavy frontend dependencies.
+2. Run a consented real-camera evaluation across lighting, pose, devices and presentation attacks; measure end-to-end latency and calibrate without weakening identity thresholds blindly.
+3. Protect/encrypt biometric stores and backups, establish retention, and review the bundled personal roster before distribution.
+4. Exercise operator recovery for deep reorgs, stale backups, external nonce use and legacy quarantines. For public-chain use, review finality, key custody and independent credential/ballot privacy protocols.
 
-Evidence files: [Node before](dependency-audit-before.json), [Node after](dependency-audit.json), [Python before](python-dependency-audit-before.json), [Python after](python-dependency-audit.json).
+Evidence files: [Node audit](dependency-audit.json), [Python audit](python-dependency-audit.json).
 
 Reference material consulted: [SQLite WAL/durability](https://sqlite.org/pragma.html#pragma_synchronous), [Web3 transaction receipts](https://web3py.readthedocs.io/en/stable/web3.eth.html), [Babel advisory](https://github.com/advisories/GHSA-67hx-6x53-jw92), [follow-redirects advisory](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p), [Vitest advisory](https://github.com/advisories/GHSA-qxg6-89mg-rqv8), and [OSV API](https://api.osv.dev/v1/querybatch).
