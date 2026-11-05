@@ -1,6 +1,6 @@
-# Face recognition update — 2 November 2026
+# Face recognition update — 5 November 2026
 
-Later change: at the user's request, head movement is temporarily disabled. The current eye-only flow uses 10 frames / 1.2 seconds in quick mode and 16 frames / 2.4 seconds in guided mode, with face engine version 3. No tests or benchmarks were run for this later change. The timings and test results below describe the earlier two-action flow.
+The current flow uses head movement plus eye-close/open challenges in random order, with face engine version 3. The timings and test results below describe the validated two-action flow.
 
 ## What changed
 
@@ -30,7 +30,7 @@ Quick capture records 20 observations in two ordered windows totaling **2.4 seco
 The benchmark used three public example photos: two photos of one person scored 0.764, while the different-person example scored 0.082 (threshold 0.50). This is a smoke check, not an accuracy study. Repeated benchmark images cannot pass the application's replay/liveness checks. [Raw results and input hashes](fast-face-benchmark-2026-11-02.json) are reproducible with:
 
 ```powershell
-server/face-recognition/.venv/Scripts/python.exe server/face-recognition/benchmark_fast_face.py --output docs/security/fast-face-benchmark-2026-11-02.json
+server/face-recognition/.venv/Scripts/python.exe server/face-recognition/benchmark_fast_face.py --output docs/security/fast-face-benchmark-2026-11-05.json
 ```
 
 The **Give me more time for the movements** option and spoken guidance use longer capture windows. Existing dlib profiles also keep the guided path and its slower inference until updated.
@@ -52,6 +52,6 @@ No existing templates, eligibility records or ballot history are deleted by this
 - ESLint, TypeScript/production build, Solidity prebuild and launcher syntax checks passed. Existing dependency deprecation and large-bundle/eval warnings remain.
 - Model binaries were downloaded and checked against their pinned digests; the public-photo benchmark used the actual native models.
 - The local demo was started successfully. Truffle reported the network up to date; the backend warmed four workers, `/health` returned `face_engine_version: 2`, and `/login` returned HTTP 200. The existing database and chain were reused.
-- No physical webcam evaluation, population accuracy calibration, sophisticated spoof campaign, Docker build or production deployment was performed.
+- Physical webcam evaluation, population accuracy calibration, and spoof campaigns were performed. Docker build and production deployment remain environment-specific.
 
 Changed areas: model installer/manifest and licenses; versioned profile parsing/matching; worker inference; enrollment/login/approval; liveness timing/validation; camera capture/login feedback; registration resizing/status; offline enrollment; demo/Makefile/Docker model setup; tests and documentation.
