@@ -19,7 +19,7 @@ Pillow>=13.0.0; python_version >= "3.11"
 # Python 3.10 compatibility only; see the security report for remaining advisories.
 Pillow>=12.3.0,<13; python_version < "3.11"
 # face-recognition-models still imports pkg_resources (removed in setuptools 81).
-setuptools>=78.1.1,<81
+setuptools>=84.2.1,<85
 dlib-bin>=19.24.0
 opencv-python-headless>=4.8.0,<4.12
 numpy>=1.24.0,<2.0
