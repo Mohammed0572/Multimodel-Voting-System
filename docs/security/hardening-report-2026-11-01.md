@@ -23,7 +23,7 @@ Subsequent [face-performance follow-up](face-performance-2026-11-01.md) replaces
 | Medium | Dependency vulnerabilities and compatibility limits | Targeted compatible upgrades; remaining findings described below |
 | Low | False certification/privacy labels, dead receipt/footer links and stale security/deployment documentation | Corrected; receipt printing works through the browser; unsupported historical scan claims removed |
 
-The initial architectural audit is in [repository-audit-2026-11-01.md](repository-audit-2026-11-01.md). Inspection covered frontend callers/context, FastAPI routes, schema/migrations, CV helpers, credentials, contract, deployment, configuration, error handling and existing tests. Initial Python tests: 16 passed. Initial contract tests: 5 passed. Passing baseline tests did not cover the critical crash/replay defects.
+Inspection covered frontend callers/context, FastAPI routes, schema/migrations, CV helpers, credentials, contract, deployment, configuration, error handling and existing tests. Initial Python tests: 16 passed. Initial contract tests: 5 passed. Passing baseline tests did not cover the critical crash/replay defects.
 
 ## 2. Bugs fixed
 
@@ -45,7 +45,6 @@ The complete changed/new source and documentation inventory is below. Generated 
 - `docs/security/hardening-report-2026-11-01.md`
 - `docs/security/python-dependency-audit-before.json`
 - `docs/security/python-dependency-audit.json`
-- `docs/security/repository-audit-2026-11-01.md`
 - `docs/security/voting-contract-security-review.md`
 - `index.ts`
 - `package.json`
