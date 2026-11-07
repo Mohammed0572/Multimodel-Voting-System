@@ -38,8 +38,8 @@ importers:
   .:
     dependencies:
       '@mediapipe/tasks-vision':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: ^1.2.2
+        version: 1.2.2
       '@truffle/contract':
         specifier: ^4.6.31
         version: 4.6.31(bufferutil@4.0.7)(supports-color@8.1.1)(utf-8-validate@6.0.3)
@@ -633,8 +633,8 @@ packages:
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
 
-  '@mediapipe/tasks-vision@1.2.0':
-    resolution: {integrity: sha512-7+dr9GbGyTtcuLh11wE5TOn4dNFRncIT9oAWs72620WX99KW5FfzF6rFJ/ChTgXG9vJ6dCiE9FrEEY4CnwPWKQ==}
+  '@mediapipe/tasks-vision@1.2.2':
+    resolution: {integrity: sha512-Z7BikxnTvlKgc3d/Nw+LV6B0xyAACxYeAHHUu/xUhm1SV7jlExa9M37beiF/wZFoy0H+cs1PlIT2Z4km02UEHQ==}
 
   '@noble/curves@1.4.2':
     resolution: {integrity: sha512-TavHr8qycMChk8UwMld0ZDRvatedkzWfH8IiaeGCfymOP5i0hSCozz9vHOL0nkwk7HRMlFnAiKpS2jrUmSybcw==}
@@ -5889,7 +5889,7 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@mediapipe/tasks-vision@1.2.0': {}
+  '@mediapipe/tasks-vision@1.2.2': {}
 
   '@noble/curves@1.4.2':
     dependencies:
