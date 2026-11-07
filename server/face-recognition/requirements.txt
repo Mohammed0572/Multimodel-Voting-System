@@ -8,7 +8,7 @@ pydantic>=2.14.2
 pydantic-settings>=2.0.0
 
 # ── Auth ──────────────────────────────────────
-PyJWT>=2.8.0
+PyJWT>=2.15.1
 
 # ── Face Recognition ──────────────────────────
 # Install face-recognition separately with --no-deps: dlib-bin supplies the
