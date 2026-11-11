@@ -33,7 +33,7 @@ python-dotenv>=1.2.4
 
 # ── Testing ───────────────────────────────────
 pytest>=7.0.0
-httpx>=0.24.0
+httpx>=0.28.1
 bcrypt
 web3>=6.0.0
 
