@@ -32,7 +32,7 @@ redis>=8.1.0          # async-compatible Redis client
 python-dotenv>=1.2.4
 
 # ── Testing ───────────────────────────────────
-pytest>=7.0.0
+pytest>=9.2.0
 httpx>=0.28.1
 bcrypt
 web3>=6.0.0
