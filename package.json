@@ -22,7 +22,7 @@
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.2.2",
     "@truffle/contract": "^4.6.31",
-    "dotenv": "^18.0.8",
+    "dotenv": "^18.0.10",
     "envalid": "^9.0.0",
     "express": "^4.22.2",
     "express-rate-limit": "^8.7.1",
