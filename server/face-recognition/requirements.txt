@@ -25,7 +25,7 @@ opencv-python-headless>=4.8.0,<4.12
 numpy>=1.24.0,<2.0
 
 # ── Rate Limiting ─────────────────────────────
-slowapi>=0.1.9
+slowapi>=0.1.10
 redis>=8.1.0          # async-compatible Redis client
 
 # ── Utilities ─────────────────────────────────
