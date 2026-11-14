@@ -2,7 +2,7 @@
 # Install with: pip install -r requirements.txt
 
 # ── Core API ──────────────────────────────────
-fastapi>=0.162.0
+fastapi>=0.162.4
 uvicorn[standard]>=0.23.0
 pydantic>=2.14.2
 pydantic-settings>=2.0.0
