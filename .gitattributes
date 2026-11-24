@@ -1,0 +1,5 @@
+# Automatically normalize line endings
+* text=auto
+
+# Include SQL files in GitHub language statistics
+*.sql linguist-detectable=true
