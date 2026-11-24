@@ -65,8 +65,8 @@ importers:
         specifier: ^5.0.9
         version: 5.0.9(jspdf@4.2.1)
       lucide-react:
-        specifier: ^1.68.0
-        version: 1.68.0(@types/react@19.3.0)(react@19.3.1)
+        specifier: ^1.75.0
+        version: 1.75.0(@types/react@19.3.0)(react@19.3.1)
       react:
         specifier: ^19.2.7
         version: 19.3.1
@@ -3315,8 +3315,8 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-react@1.68.0:
-    resolution: {integrity: sha512-9i7NKWm2QlOprMhcwkhBOlIt9zB7cp2GIyFY+oMue0EsprolUFxva5rkdBbyfs4k1eejpa0JRnRgVOGiart+Xg==}
+  lucide-react@1.75.0:
+    resolution: {integrity: sha512-piesXAZIXru9d5lHBoM6cPHOBs5+QkMx+3EXwG3xWJ7qdViuz92JtYN0u9jMB6jt+2WbQrwhvJGdMwGnL3EOfA==}
     peerDependencies:
       '@types/react': '*'
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -9000,7 +9000,7 @@ snapshots:
   ltgt@2.2.1:
     optional: true
 
-  lucide-react@1.68.0(@types/react@19.3.0)(react@19.3.1):
+  lucide-react@1.75.0(@types/react@19.3.0)(react@19.3.1):
     dependencies:
       react: 19.3.1
     optionalDependencies:
