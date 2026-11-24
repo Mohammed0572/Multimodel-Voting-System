@@ -38,4 +38,4 @@ bcrypt
 web3>=8.0.0
 
 # Updated trust store for RPC/HTTPS clients.
-certifi>=2026.10.18
+certifi>=2026.10.23
